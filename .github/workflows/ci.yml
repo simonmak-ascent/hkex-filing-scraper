@@ -116,8 +116,8 @@ jobs:
       - name: Run the suite against the installed package
         run: |
           mkdir -p /tmp/wheel-tests
-          # scripts/ is repository tooling (not shipped in the wheel) that some tests load.
-          cp -R tests scripts /tmp/wheel-tests/
+          # scripts/ and api/ are repository tooling (not shipped in the wheel) that some tests load.
+          cp -R tests scripts api /tmp/wheel-tests/
           cd /tmp/wheel-tests
           /tmp/wheel/bin/python -m pytest -q tests \
             --ignore=tests/test_docs_consistency.py \
