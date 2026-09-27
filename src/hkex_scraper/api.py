@@ -76,6 +76,12 @@ def _parse_api_record(record: dict) -> dict:
         "stockName": squash_ws(raw_name),
         "title": squash_ws(title),
         "link": file_link,
+        # Additive metadata used by the live MCP gateway for richer results and
+        # faceting; the scraper pipeline reads only the keys above.
+        "fileType": _as_text(record.get("FILE_TYPE")).strip(),
+        "sizeText": _as_text(record.get("FILE_INFO")).strip(),
+        "category": squash_ws(_as_text(record.get("LONG_TEXT"))),
+        "newsId": _as_text(record.get("NEWS_ID")).strip(),
     }
 
 

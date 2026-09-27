@@ -185,7 +185,7 @@ instead, which reads from a configured database sink.
   and `prompts/list` return empty lists so probing clients connect cleanly.
 - **Origin** — a web `Origin` must be allowlisted (MCP's DNS-rebinding mitigation).
   Desktop shells that send no `Origin`, `null`, or a `file://` origin are allowed.
-- **Tools** — `get_server_info`, `search_filings`, and `get_filing`; all read-only.
+- **Tools** — `get_server_info`, `search_filings`, `list_filing_facets`, and `get_filing`; all read-only.
 
 ## See also
 

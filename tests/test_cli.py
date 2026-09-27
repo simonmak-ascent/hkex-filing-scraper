@@ -161,4 +161,8 @@ class TestApiRecordParsing:
             "stockName": "",
             "title": "",
             "link": "",
+            "fileType": "",
+            "sizeText": "",
+            "category": "",
+            "newsId": "",
         }

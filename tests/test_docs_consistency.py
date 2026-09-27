@@ -236,7 +236,7 @@ class TestLiveGatewayDocs:
         from hkex_scraper import live_mcp
 
         names = [tool["name"] for tool in live_mcp.TOOL_SCHEMAS]
-        assert names == ["get_server_info", "search_filings", "get_filing"]
+        assert names == ["get_server_info", "search_filings", "list_filing_facets", "get_filing"]
         for rel in ("docs/live-mcp.md", "docs/ai-agents.md"):
             doc = _read(rel)
             missing = [name for name in names if f"`{name}`" not in doc]

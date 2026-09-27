@@ -152,7 +152,17 @@ class TestApiRecordParsing:
     @settings(max_examples=60, deadline=None)
     def test_parse_never_raises_and_normalises_the_fields(self, record):
         parsed = _parse_api_record(record)
-        assert set(parsed) == {"date", "stockCode", "stockName", "title", "link"}
+        assert set(parsed) == {
+            "date",
+            "stockCode",
+            "stockName",
+            "title",
+            "link",
+            "fileType",
+            "sizeText",
+            "category",
+            "newsId",
+        }
         # Relative links are absolutised against the HKEx base URL.
         if record["FILE_LINK"].startswith("/"):
             assert parsed["link"].startswith("http")

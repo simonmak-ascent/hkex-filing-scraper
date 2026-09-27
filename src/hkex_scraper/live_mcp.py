@@ -12,7 +12,7 @@ hand-rolled JSON-RPC shim. The ``mcp`` SDK is imported lazily behind the ``mcp``
 
 Security posture (this endpoint is intentionally public and unauthenticated):
 
-* **Read-only by construction** — three read tools, no arbitrary URL/SQL surface.
+* **Read-only by construction** — four read tools, no arbitrary URL/SQL surface.
 * **SSRF allowlist** — ``get_filing`` fetches only HKEx document hosts.
 * **Bounded** — a hard result cap, a bounded date window, and text/table truncation so a
   response can never approach the platform body limit.
@@ -59,6 +59,7 @@ MAX_MAX_RESULTS = 200
 MAX_WINDOW_DAYS = 31
 MAX_TEXT_CHARS = 300_000
 MAX_TABLES = 30
+MAX_FACET_VALUES = 50
 FETCH_TIMEOUT_SECONDS = 60
 
 DATE_FORMATS = ("%Y-%m-%d", "%d/%m/%Y")
@@ -78,9 +79,12 @@ def _allowed_doc_hosts() -> Tuple[str, ...]:
 INSTRUCTIONS = (
     "Live, read-only access to HKEx (Hong Kong Stock Exchange) regulatory filings. Every "
     "call fetches fresh data from the HKEx website; nothing is stored. Use search_filings "
-    "with a date window of at most 31 days to find filings, then get_filing on a returned "
-    "link to download and extract its text and tables. This server never writes and never "
-    "fetches arbitrary URLs."
+    "with a date window of at most 31 days to find filings, narrowing with the optional "
+    "stock_code, title_query, document_type, category, and stock_name filters; use "
+    "list_filing_facets to browse the categories, document types, and stock codes present "
+    "in a window before drilling in. Then call get_filing on a returned link to download "
+    "and extract its text and tables. This server never writes and never fetches arbitrary "
+    "URLs."
 )
 
 
@@ -165,22 +169,26 @@ def _tool_get_server_info() -> Dict[str, Any]:
         "storage": "none",
         "read_only": True,
         "extraction": _extraction_dependencies(),
-        "tools": ["get_server_info", "search_filings", "get_filing"],
+        "tools": ["get_server_info", "search_filings", "list_filing_facets", "get_filing"],
+        "filters": ["stock_code", "title_query", "document_type", "category", "stock_name"],
         "limits": {
             "max_results": MAX_MAX_RESULTS,
             "max_window_days": MAX_WINDOW_DAYS,
             "max_text_chars": MAX_TEXT_CHARS,
             "max_tables": MAX_TABLES,
+            "max_facet_values": MAX_FACET_VALUES,
         },
     }
 
 
-def _tool_search_filings(
-    from_date: str,
-    to_date: str,
-    stock_code: str = "",
-    max_results: int = DEFAULT_MAX_RESULTS,
-) -> Dict[str, Any]:
+def _fetch_window(
+    from_date: str, to_date: str, max_results: int
+) -> Tuple[Any, Any, List[Dict[str, Any]], Optional[int]]:
+    """Validate a date window and fetch the parsed HKEx records for it.
+
+    Returns ``(start, end, records, total_reported)``. The window is at most
+    ``MAX_WINDOW_DAYS`` days and ``max_results`` is clamped to ``MAX_MAX_RESULTS``.
+    """
     start = _parse_date(from_date, "from_date")
     end = _parse_date(to_date, "to_date")
     if end < start:
@@ -196,17 +204,116 @@ def _tool_search_filings(
         )
     except Exception as exc:  # noqa: BLE001 - surfaced as an actionable tool error
         raise McpError(f"HKEx request failed: {type(exc).__name__}") from None
+    return start, end, records, total
 
+
+def _filter_records(
+    records: List[Dict[str, Any]],
+    stock_code: str = "",
+    title_query: str = "",
+    document_type: str = "",
+    category: str = "",
+    stock_name: str = "",
+) -> List[Dict[str, Any]]:
+    """Apply the optional substring/equality filters to fetched records.
+
+    ``stock_code`` and ``document_type`` match exactly (codes are normalised, types
+    compared case-insensitively); ``title_query``, ``category`` and ``stock_name`` are
+    case-insensitive substrings. All filters combine with AND semantics.
+    """
+    filtered = records
     if stock_code:
         needle = _normalise_code(stock_code)
-        records = [r for r in records if _normalise_code(r.get("stockCode")) == needle]
+        filtered = [r for r in filtered if _normalise_code(r.get("stockCode")) == needle]
+    if title_query:
+        needle = title_query.strip().lower()
+        filtered = [r for r in filtered if needle in str(r.get("title") or "").lower()]
+    if document_type:
+        needle = document_type.strip().lower()
+        filtered = [r for r in filtered if str(r.get("fileType") or "").lower() == needle]
+    if category:
+        needle = category.strip().lower()
+        filtered = [r for r in filtered if needle in str(r.get("category") or "").lower()]
+    if stock_name:
+        needle = stock_name.strip().lower()
+        filtered = [r for r in filtered if needle in str(r.get("stockName") or "").lower()]
+    return filtered
+
+
+def _tool_search_filings(
+    from_date: str,
+    to_date: str,
+    stock_code: str = "",
+    title_query: str = "",
+    document_type: str = "",
+    category: str = "",
+    stock_name: str = "",
+    max_results: int = DEFAULT_MAX_RESULTS,
+) -> Dict[str, Any]:
+    start, end, records, total = _fetch_window(from_date, to_date, max_results)
+    records = _filter_records(
+        records,
+        stock_code=stock_code,
+        title_query=title_query,
+        document_type=document_type,
+        category=category,
+        stock_name=stock_name,
+    )
+    applied = {
+        "stock_code": (stock_code or "").strip(),
+        "title_query": (title_query or "").strip(),
+        "document_type": (document_type or "").strip(),
+        "category": (category or "").strip(),
+        "stock_name": (stock_name or "").strip(),
+    }
+    return {
+        "from": start.isoformat(),
+        "to": end.isoformat(),
+        "count": len(records),
+        "total_reported": total,
+        "filters": {name: value for name, value in applied.items() if value},
+        "filings": records,
+    }
+
+
+def _facet_counts(records: List[Dict[str, Any]], key: str, limit: int) -> List[Dict[str, Any]]:
+    """Count non-empty values of ``key`` across ``records``, sorted by frequency."""
+    counts: Dict[str, int] = {}
+    for record in records:
+        value = str(record.get(key) or "").strip()
+        if value:
+            counts[value] = counts.get(value, 0) + 1
+    ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    return [{"value": value, "count": count} for value, count in ordered[:limit]]
+
+
+def _tool_list_filing_facets(
+    from_date: str,
+    to_date: str,
+    stock_code: str = "",
+    max_results: int = DEFAULT_MAX_RESULTS,
+) -> Dict[str, Any]:
+    start, end, records, total = _fetch_window(from_date, to_date, max_results)
+    records = _filter_records(records, stock_code=stock_code)
+    categories = _facet_counts(records, "category", MAX_FACET_VALUES)
+    document_types = _facet_counts(records, "fileType", MAX_FACET_VALUES)
+    stock_codes = _facet_counts(records, "stockCode", MAX_FACET_VALUES)
+
+    def _distinct(key: str) -> int:
+        return len({str(r.get(key) or "").strip() for r in records} - {""})
 
     return {
         "from": start.isoformat(),
         "to": end.isoformat(),
         "count": len(records),
         "total_reported": total,
-        "filings": records,
+        "stock_code_filter": (stock_code or "").strip(),
+        "distinct_categories": _distinct("category"),
+        "distinct_document_types": _distinct("fileType"),
+        "distinct_stock_codes": _distinct("stockCode"),
+        "categories": categories,
+        "document_types": document_types,
+        "stock_codes": stock_codes,
     }
 
 
@@ -250,6 +357,7 @@ def _tool_get_filing(link: str, extract: bool = True) -> Dict[str, Any]:
 _HANDLERS: Dict[str, Callable[..., Dict[str, Any]]] = {
     "get_server_info": _tool_get_server_info,
     "search_filings": _tool_search_filings,
+    "list_filing_facets": _tool_list_filing_facets,
     "get_filing": _tool_get_filing,
 }
 
@@ -287,16 +395,52 @@ def search_filings(
     from_date: str,
     to_date: str,
     stock_code: str = "",
+    title_query: str = "",
+    document_type: str = "",
+    category: str = "",
+    stock_name: str = "",
     max_results: int = DEFAULT_MAX_RESULTS,
 ) -> Dict[str, Any]:
     """Search live HKEx filings in a date window (at most 31 days).
 
-    ``from_date``/``to_date`` accept YYYY-MM-DD or DD/MM/YYYY. When ``stock_code`` is set,
-    results are filtered to that code (e.g. ``01461`` or ``1461``). ``max_results`` caps the
-    number of filings fetched and returned (hard cap 200). Returns the parsed filings plus
-    the HKEx-reported total for the window.
+    ``from_date``/``to_date`` accept YYYY-MM-DD or DD/MM/YYYY. All filters are optional and
+    combine with AND semantics: ``stock_code`` matches exactly (e.g. ``01461`` or ``1461``);
+    ``title_query``, ``category`` and ``stock_name`` are case-insensitive substrings (e.g.
+    category ``Dividend``); ``document_type`` matches the file type exactly (e.g. ``PDF`` or
+    ``HTML``). Filters are applied to the fetched window, so widen ``max_results`` to catch
+    rarer matches. ``max_results`` caps the number of filings fetched and returned (hard cap
+    200). Returns the matching filings — each carrying ``fileType``, ``sizeText``,
+    ``category`` and ``newsId`` metadata — plus the HKEx-reported total for the window. Use
+    list_filing_facets first to see which categories, types and codes exist in a window.
     """
-    return _tool_search_filings(from_date, to_date, stock_code, max_results)
+    return _tool_search_filings(
+        from_date,
+        to_date,
+        stock_code,
+        title_query,
+        document_type,
+        category,
+        stock_name,
+        max_results,
+    )
+
+
+@_as_tool
+def list_filing_facets(
+    from_date: str,
+    to_date: str,
+    stock_code: str = "",
+    max_results: int = DEFAULT_MAX_RESULTS,
+) -> Dict[str, Any]:
+    """Browse what filings exist in a date window (at most 31 days) without downloading.
+
+    ``from_date``/``to_date`` accept YYYY-MM-DD or DD/MM/YYYY. Returns counts of the
+    categories (headline categories), document types, and stock codes present in the window,
+    each sorted by frequency and capped at 50 values, plus the distinct counts. Optionally
+    narrow to one ``stock_code``. Use this to discover valid filter values before calling
+    search_filings; it fetches the window once and extracts no document text.
+    """
+    return _tool_list_filing_facets(from_date, to_date, stock_code, max_results)
 
 
 @_as_tool
@@ -310,10 +454,15 @@ def get_filing(link: str, extract: bool = True) -> Dict[str, Any]:
     return _tool_get_filing(link, extract)
 
 
-TOOLS: List[Callable[..., Any]] = [get_server_info, search_filings, get_filing]
+TOOLS: List[Callable[..., Any]] = [
+    get_server_info,
+    search_filings,
+    list_filing_facets,
+    get_filing,
+]
 
 
-# Explicit JSON Schemas for the three tools, used by the transport-agnostic shim and tests.
+# Explicit JSON Schemas for the four tools, used by the transport-agnostic shim and tests.
 TOOL_SCHEMAS: List[Dict[str, Any]] = [
     {
         "name": "get_server_info",
@@ -333,7 +482,44 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
             "properties": {
                 "from_date": {"type": "string", "description": "YYYY-MM-DD or DD/MM/YYYY"},
                 "to_date": {"type": "string", "description": "YYYY-MM-DD or DD/MM/YYYY"},
-                "stock_code": {"type": "string", "description": "Optional HKEx stock code"},
+                "stock_code": {
+                    "type": "string",
+                    "description": "Optional exact HKEx stock code, e.g. 01461",
+                },
+                "title_query": {
+                    "type": "string",
+                    "description": "Optional case-insensitive substring of the filing title",
+                },
+                "document_type": {
+                    "type": "string",
+                    "description": "Optional exact file type, e.g. PDF, HTML, XLS, DOC",
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Optional case-insensitive substring of the headline category",
+                },
+                "stock_name": {
+                    "type": "string",
+                    "description": "Optional case-insensitive substring of the stock short name",
+                },
+                "max_results": {"type": "integer", "minimum": 1, "maximum": MAX_MAX_RESULTS},
+            },
+            "required": ["from_date", "to_date"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "list_filing_facets",
+        "description": list_filing_facets.__doc__ or "",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "from_date": {"type": "string", "description": "YYYY-MM-DD or DD/MM/YYYY"},
+                "to_date": {"type": "string", "description": "YYYY-MM-DD or DD/MM/YYYY"},
+                "stock_code": {
+                    "type": "string",
+                    "description": "Optional exact HKEx stock code to narrow the facets",
+                },
                 "max_results": {"type": "integer", "minimum": 1, "maximum": MAX_MAX_RESULTS},
             },
             "required": ["from_date", "to_date"],
@@ -494,7 +680,7 @@ def parse_error_response() -> RpcResponse:
 # Server assembly
 # ---------------------------------------------------------------------------
 def build_server() -> Any:
-    """Build the FastMCP server with the three live, read-only tools registered."""
+    """Build the FastMCP server with the four live, read-only tools registered."""
     if not _MCP_AVAILABLE:
         raise RuntimeError(
             'MCP support is not installed; install with: pip install "hkex-filing-scraper[mcp]"'

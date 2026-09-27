@@ -84,8 +84,15 @@ class TestSchemas:
     def test_required_fields(self):
         schemas = {schema["name"]: schema for schema in live_mcp.TOOL_SCHEMAS}
         assert schemas["search_filings"]["inputSchema"]["required"] == ["from_date", "to_date"]
+        assert schemas["list_filing_facets"]["inputSchema"]["required"] == ["from_date", "to_date"]
         assert schemas["get_filing"]["inputSchema"]["required"] == ["link"]
         assert schemas["get_server_info"]["inputSchema"]["required"] == []
+
+    def test_search_filings_exposes_advanced_filters(self):
+        schemas = {schema["name"]: schema for schema in live_mcp.TOOL_SCHEMAS}
+        props = schemas["search_filings"]["inputSchema"]["properties"]
+        for name in ("stock_code", "title_query", "document_type", "category", "stock_name"):
+            assert name in props
 
 
 class TestHandleTool:
@@ -100,6 +107,34 @@ class TestHandleTool:
         assert info["storage"] == "none"
         assert info["read_only"] is True
         assert "extraction" in info
+
+
+def _stub_records(monkeypatch, records, total=None):
+    """Stub the network so ``_fetch_window`` returns ``records``."""
+    monkeypatch.setattr(live_mcp.http, "make_session", lambda: object())
+    monkeypatch.setattr(
+        live_mcp.api,
+        "fetch_chunk_via_api",
+        lambda *a, **k: (records, total if total is not None else len(records)),
+    )
+
+
+_RICH_RECORDS = [
+    {
+        "stockCode": "01461",
+        "stockName": "ZHONGTAI FUTURES",
+        "title": "Dividend Notice",
+        "fileType": "PDF",
+        "category": "Announcements and Notices - [Dividend]",
+    },
+    {
+        "stockCode": "00005",
+        "stockName": "HSBC HOLDINGS",
+        "title": "Annual Report 2025",
+        "fileType": "HTML",
+        "category": "Financial Statements - [Annual Report]",
+    },
+]
 
 
 class TestSearchFilings:
@@ -118,7 +153,7 @@ class TestSearchFilings:
         ]
         monkeypatch.setattr(live_mcp.http, "make_session", lambda: object())
         monkeypatch.setattr(live_mcp.api, "fetch_chunk_via_api", lambda *a, **k: (records, 2))
-        out = live_mcp._tool_search_filings("2026-09-01", "2026-09-10", "1461", 10)
+        out = live_mcp._tool_search_filings("2026-09-01", "2026-09-10", "1461", max_results=10)
         assert out["count"] == 1
         assert out["total_reported"] == 2
         assert out["filings"][0]["stockCode"] == "01461"
@@ -133,8 +168,70 @@ class TestSearchFilings:
 
         monkeypatch.setattr(live_mcp.http, "make_session", lambda: object())
         monkeypatch.setattr(live_mcp.api, "fetch_chunk_via_api", fake)
-        live_mcp._tool_search_filings("2026-09-01", "2026-09-10", "", 10_000)
+        live_mcp._tool_search_filings("2026-09-01", "2026-09-10", "", max_results=10_000)
         assert seen["limit"] == live_mcp.MAX_MAX_RESULTS
+
+    def test_echoes_only_applied_filters(self, monkeypatch):
+        _stub_records(monkeypatch, list(_RICH_RECORDS))
+        out = live_mcp._tool_search_filings("2026-09-01", "2026-09-10", "1461")
+        assert out["filters"] == {"stock_code": "1461"}
+
+    @pytest.mark.parametrize(
+        ("kwargs", "expected_codes"),
+        [
+            ({"title_query": "dividend"}, ["01461"]),
+            ({"title_query": "REPORT"}, ["00005"]),
+            ({"document_type": "pdf"}, ["01461"]),
+            ({"document_type": "HTML"}, ["00005"]),
+            ({"category": "annual"}, ["00005"]),
+            ({"stock_name": "hsbc"}, ["00005"]),
+            ({"category": "notices"}, ["01461"]),
+            ({"title_query": "report", "document_type": "html"}, ["00005"]),
+            ({"title_query": "dividend", "document_type": "html"}, []),
+        ],
+    )
+    def test_advanced_filters(self, monkeypatch, kwargs, expected_codes):
+        _stub_records(monkeypatch, [dict(r) for r in _RICH_RECORDS])
+        out = live_mcp._tool_search_filings("2026-09-01", "2026-09-10", **kwargs)
+        assert [f["stockCode"] for f in out["filings"]] == expected_codes
+
+    def test_metadata_is_surfaced_in_results(self, monkeypatch):
+        _stub_records(monkeypatch, [dict(_RICH_RECORDS[0])])
+        out = live_mcp._tool_search_filings("2026-09-01", "2026-09-10")
+        filing = out["filings"][0]
+        assert filing["fileType"] == "PDF"
+        assert filing["category"] == "Announcements and Notices - [Dividend]"
+
+
+class TestListFilingFacets:
+    def test_counts_by_category_type_and_code(self, monkeypatch):
+        _stub_records(monkeypatch, [dict(r) for r in _RICH_RECORDS], total=99)
+        out = live_mcp._tool_list_filing_facets("2026-09-01", "2026-09-10")
+        assert out["count"] == 2
+        assert out["total_reported"] == 99
+        assert out["from"] == "2026-09-01" and out["to"] == "2026-09-10"
+        assert {"value": "PDF", "count": 1} in out["document_types"]
+        assert {"value": "HTML", "count": 1} in out["document_types"]
+        assert out["distinct_document_types"] == 2
+        assert out["distinct_stock_codes"] == 2
+        values = {entry["value"] for entry in out["categories"]}
+        assert "Financial Statements - [Annual Report]" in values
+
+    def test_narrows_to_stock_code(self, monkeypatch):
+        _stub_records(monkeypatch, [dict(r) for r in _RICH_RECORDS])
+        out = live_mcp._tool_list_filing_facets("2026-09-01", "2026-09-10", "1461")
+        assert out["count"] == 1
+        assert out["stock_codes"] == [{"value": "01461", "count": 1}]
+
+    def test_facet_values_are_capped(self, monkeypatch):
+        records = [{"stockCode": f"{i:05d}", "fileType": "PDF"} for i in range(120)]
+        _stub_records(monkeypatch, records)
+        out = live_mcp._tool_list_filing_facets("2026-09-01", "2026-09-10")
+        assert len(out["stock_codes"]) == live_mcp.MAX_FACET_VALUES
+
+    def test_window_rules_still_apply(self):
+        with pytest.raises(live_mcp.McpError, match="window too wide"):
+            live_mcp._tool_list_filing_facets("2026-01-01", "2026-03-01")
 
 
 class _FakeResponse:
@@ -192,10 +289,10 @@ class TestGetFiling:
 
 @pytest.mark.skipif(not live_mcp._MCP_AVAILABLE, reason="mcp extra not installed")
 class TestServerAssembly:
-    def test_build_server_registers_three_tools(self):
+    def test_build_server_registers_four_tools(self):
         server = live_mcp.build_server()
         names = {tool.name for tool in server._tool_manager.list_tools()}
-        assert names == {"get_server_info", "search_filings", "get_filing"}
+        assert names == {"get_server_info", "search_filings", "list_filing_facets", "get_filing"}
 
     def test_build_asgi_returns_a_callable_app(self):
         app = live_mcp.build_asgi()
@@ -256,7 +353,7 @@ class TestJsonRpcProtocol:
     def test_tools_list(self):
         response = live_mcp.handle_jsonrpc({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
         names = [tool["name"] for tool in response.body["result"]["tools"]]
-        assert names == ["get_server_info", "search_filings", "get_filing"]
+        assert names == ["get_server_info", "search_filings", "list_filing_facets", "get_filing"]
 
     def test_ping(self):
         response = live_mcp.handle_jsonrpc({"jsonrpc": "2.0", "id": 3, "method": "ping"})

@@ -30,7 +30,7 @@ local half; the same client can use either.
 flowchart LR
     A["AI agent<br/>Claude · ChatGPT · Cursor · Copilot<br/>Gemini · opencode · Manus · Perplexity"]
     A -->|"Streamable HTTP · no API key"| G["Live MCP gateway<br/>stateless · no database"]
-    G -->|"search_filings · get_filing"| H["HKEx API + documents"]
+    G -->|"search_filings · list_filing_facets · get_filing"| H["HKEx API + documents"]
     A -->|"stdio · hkex-scraper-mcp"| S["Read-only MCP server"]
     S --> D["Your database<br/>postgres · mysql · sqlite · mongodb<br/>mariadb · neo4j · clickhouse · duckdb · surrealdb"]
     H -.->|"pip install + scrape"| D
@@ -44,7 +44,8 @@ If the diagram does not render, it is also available as
 | Tool | What it does |
 | ---- | ------------ |
 | `get_server_info` | Reports the gateway version, transport, and hard limits. Reads nothing. |
-| `search_filings` | Searches live filings in a date window (at most 31 days), optionally filtered to one stock code. |
+| `search_filings` | Searches live filings in a date window (at most 31 days), optionally narrowed by stock code, title, document type, category, or stock name. |
+| `list_filing_facets` | Browses the categories, document types, and stock codes present in a date window, with counts — no document download. |
 | `get_filing` | Downloads one HKEx document and extracts its text and tables. |
 
 Every tool is **read-only**. The gateway never writes, never runs schema DDL, and never
@@ -58,6 +59,7 @@ The model cannot raise these:
 | ----- | ----- |
 | Search window | 31 days per call |
 | `max_results` | 200 |
+| Facet values | 50 per facet |
 | Extracted text | 300,000 characters per document |
 | Tables | 30 per document |
 
@@ -102,7 +104,7 @@ Manus, and Perplexity — is in [AI agent support](ai-agents.md).
 The gateway is a deliberately public, read-only API over public filings data. Its controls
 are:
 
-- **Read-only by construction** — three read tools; no write, SQL, or arbitrary-fetch surface.
+- **Read-only by construction** — four read tools; no write, SQL, or arbitrary-fetch surface.
 - **SSRF allowlist** — documents are fetched only from HKEx hosts (`www1.hkexnews.hk`).
 - **Origin validation** — requests carrying a disallowed `Origin` are rejected (MCP's
   DNS-rebinding mitigation).

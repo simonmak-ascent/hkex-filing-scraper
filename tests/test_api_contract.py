@@ -171,7 +171,17 @@ class TestTolerantParsing:
     )
     def test_never_raises(self, record):
         parsed = api._parse_api_record(record)
-        assert set(parsed) == {"date", "stockCode", "stockName", "title", "link"}
+        assert set(parsed) == {
+            "date",
+            "stockCode",
+            "stockName",
+            "title",
+            "link",
+            "fileType",
+            "sizeText",
+            "category",
+            "newsId",
+        }
         assert all(isinstance(v, str) for v in parsed.values())
 
     def test_cjk_title_is_preserved(self):

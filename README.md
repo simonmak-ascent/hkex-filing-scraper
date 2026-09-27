@@ -73,8 +73,10 @@ POST, Streamable HTTP, **no API key**:
 https://hkex-listco-updates.ascent-partners.com/api/mcp
 ```
 
-Three read-only tools: `get_server_info`, `search_filings` (a window of at most 31 days), and
-`get_filing` (downloads one document and extracts its text and tables).
+Four read-only tools: `get_server_info`, `search_filings` (a window of at most 31 days, with
+optional stock-code, title, document-type, category, and stock-name filters),
+`list_filing_facets` (browse what a window contains), and `get_filing` (downloads one
+document and extracts its text and tables).
 
 ![Two ways to reach HKEx filings from an AI agent: the hosted MCP gateway or the local stdio server](https://raw.githubusercontent.com/simonplmak-cloud/hkex-filing-scraper/main/docs/assets/mcp.png)
 
