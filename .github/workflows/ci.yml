@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           enable-cache: true
       - name: Lockfile is current
@@ -89,7 +89,7 @@ jobs:
         run: pytest -q --cov --cov-branch --cov-report=term-missing --cov-report=xml
       - name: Keep the coverage report
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-xml
           path: coverage.xml
@@ -116,8 +116,8 @@ jobs:
       - name: Run the suite against the installed package
         run: |
           mkdir -p /tmp/wheel-tests
-          # scripts/ is repository tooling (not shipped in the wheel) that some tests load.
-          cp -R tests scripts /tmp/wheel-tests/
+          # scripts/ and api/ are repository tooling (not shipped in the wheel) that some tests load.
+          cp -R tests scripts api /tmp/wheel-tests/
           cd /tmp/wheel-tests
           /tmp/wheel/bin/python -m pytest -q tests \
             --ignore=tests/test_docs_consistency.py \
