@@ -26,7 +26,7 @@ hkex-scraper [options]
 | `--verify` | flag | off | Compare every configured sink by filing id and document hash (`document_sha256`), then exit non-zero on any difference. Requires two or more sinks. |
 | `--version` | flag | — | Print the version and exit. |
 
-## Behaviour
+## Behavior
 
 - With no mode flag, a full run is performed: Phase 1 (metadata), then graph linking, then Phase 2 (documents) — unless `--metadata-only`.
 - `--backfill-docs` and `--link-only` run phases in isolation for incremental maintenance.

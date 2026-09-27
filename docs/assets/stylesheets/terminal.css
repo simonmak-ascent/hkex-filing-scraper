@@ -130,7 +130,7 @@ body,
   color: var(--term-text);
 }
 
-/* Links: amber, and underlined in prose so colour is never the only cue
+/* Links: amber, and underlined in prose so color is never the only cue
  * (WCAG 1.4.1). Dense chrome (nav, tables, header, footer) stays un-underlined. */
 .md-typeset a {
   color: var(--term-amber);

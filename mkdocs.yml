@@ -11,7 +11,7 @@ theme:
   custom_dir: overrides
   logo: assets/favicon.svg
   favicon: assets/favicon.svg
-  # Fixed dark theme (terminal style): no light mode, no colour-scheme toggle.
+  # Fixed dark theme (terminal style): no light mode, no color-scheme toggle.
   palette:
     scheme: slate
     primary: black
@@ -29,7 +29,7 @@ theme:
 extra_css:
   - assets/stylesheets/terminal.css
 extra_javascript:
-  # Gives Material's unlabelled search toggle an accessible name (WCAG 2.2, axe `label`).
+  # Gives Material's unlabeled search toggle an accessible name (WCAG 2.2, axe `label`).
   - assets/javascripts/a11y.js
 markdown_extensions:
   - meta

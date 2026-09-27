@@ -33,7 +33,7 @@ DATABASE_TARGET=surrealdb,postgres
 DATABASE_TARGET=surrealdb
 ```
 
-Keeping the previous behaviour (SurrealDB primary, PostgreSQL mirrored) is
+Keeping the previous behavior (SurrealDB primary, PostgreSQL mirrored) is
 `DATABASE_TARGET=surrealdb,postgres` — but note that reads now come from `surrealdb`
 (first in the list), matching the old default.
 

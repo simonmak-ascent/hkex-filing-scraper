@@ -155,7 +155,7 @@ matrix — licenses, capability differences, per-engine notes — is in
 | `duckdb` | relational | MIT | `duckdb` | `ON CONFLICT DO UPDATE` |
 | `surrealdb` | graph + document | BSL 1.1¹ | — | `UPSERT` / `RELATE` |
 
-¹ Source-available, not OSI-approved — labelled exceptions per
+¹ Source-available, not OSI-approved — labeled exceptions per
 [ADR 0003](docs/adr/0003-sink-support-policy.md).
 
 Valid sink ids, in documented order: `postgres`, `mysql`, `sqlite`, `mongodb`, `mariadb`, `neo4j`, `clickhouse`, `duckdb`, `surrealdb`. Set one variable and the same run feeds every sink:

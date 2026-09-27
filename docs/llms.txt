@@ -14,7 +14,7 @@
 - [Configuration](https://hkex-listco-updates.ascent-partners.com/configuration/): every environment variable and the `DATABASE_TARGET` sink selector.
 - [CLI](https://hkex-listco-updates.ascent-partners.com/cli/): command-line reference and flags.
 - [MCP server](https://hkex-listco-updates.ascent-partners.com/mcp/): a read-only Model Context Protocol server over stdio for LLM clients.
-- [Live MCP gateway](https://hkex-listco-updates.ascent-partners.com/live-mcp/): a hosted, database-free Streamable HTTP MCP endpoint that fetches live HKEx data; no API key.
+- [Live MCP gateway](https://hkex-listco-updates.ascent-partners.com/live-mcp/): a hosted, database-free Streamable HTTP MCP endpoint that searches live HKEx filings with filters, browses window facets, and downloads documents; no API key.
 - [AI agent support](https://hkex-listco-updates.ascent-partners.com/ai-agents/): connect the gateway from Claude, ChatGPT, Cursor, Copilot, Gemini, opencode, Manus, and Perplexity.
 
 ## Database sinks

@@ -39,7 +39,7 @@ destination; none is privileged.
 | `duckdb` | relational | MIT | Yes | `duckdb` | `ON CONFLICT DO UPDATE` | Yes | Yes |
 | `surrealdb` | graph + document | BSL 1.1 | No | — | `UPSERT` / `RELATE` | Yes | Yes |
 
-Source-available engines are labelled as such (see
+Source-available engines are labeled as such (see
 [ADR 0003](../adr/0003-sink-support-policy.md)).
 
 ### Capability differences

@@ -35,7 +35,7 @@ Format identifiers, paths, variables, and commands as `` `code` ``. Format sink 
 - Each page ends with a short **See also** or **Next steps** list of relative links, unless it
   is a terminal reference (ADR, changelog entry).
 - Per-sink guides follow one template so pages are diffable:
-  `Overview → Install → Configure → Schema → Behaviour and limits → Example queries → Troubleshooting`.
+  `Overview → Install → Configure → Schema → Behavior and limits → Example queries → Troubleshooting`.
 
 ## Formatting
 

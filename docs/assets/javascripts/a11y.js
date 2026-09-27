@@ -2,7 +2,7 @@
  *
  * Material renders the header search control as a bare checkbox (`#__search`) with no
  * accessible name, which axe reports as a WCAG 2.2 violation (`label`, critical). The real
- * search text field is labelled already; this gives the toggle one too, and keeps it applied
+ * search text field is labeled already; this gives the toggle one too, and keeps it applied
  * across instant navigation.
  */
 (function () {

@@ -51,6 +51,66 @@ If the diagram does not render, it is also available as
 Every tool is **read-only**. The gateway never writes, never runs schema DDL, and never
 fetches an arbitrary URL — `get_filing` accepts only HKEx document hosts.
 
+### Search filters
+
+`search_filings` narrows a window with five optional, combinable filters:
+
+| Filter | Match | Example |
+| ------ | ----- | ------- |
+| `stock_code` | Exact stock code; leading zeros optional | `01461` or `1461` |
+| `title_query` | Case-insensitive substring of the title | `dividend` |
+| `document_type` | Exact file type | `PDF`, `HTML`, `XLSX` |
+| `category` | Case-insensitive substring of the HKEx category | `share buyback` |
+| `stock_name` | Case-insensitive substring of the stock short name | `hsbc` |
+
+Filters combine with AND. They apply to the filings fetched for the window, so raise
+`max_results` to catch rarer matches. Each returned filing carries the `fileType`, `sizeText`,
+`category`, and `newsId` metadata alongside its date, stock code, stock name, title, and link.
+Call `list_filing_facets` first to see which categories, document types, and stock codes a
+window holds.
+
+### Examples
+
+Search a window for one company's filings whose title mentions dividends:
+
+```bash
+curl -sS https://hkex-listco-updates.ascent-partners.com/api/mcp \
+  -H "content-type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "search_filings",
+      "arguments": {
+        "from_date": "2026-09-01",
+        "to_date": "2026-09-30",
+        "stock_code": "00700",
+        "title_query": "dividend"
+      }
+    }
+  }'
+```
+
+Browse what a window holds before drilling in — the categories, document types, and stock
+codes with their counts:
+
+```bash
+curl -sS https://hkex-listco-updates.ascent-partners.com/api/mcp \
+  -H "content-type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/call",
+    "params": {
+      "name": "list_filing_facets",
+      "arguments": {"from_date": "2026-09-01", "to_date": "2026-09-30"}
+    }
+  }'
+```
+
+Pass a search result's `link` to `get_filing` to download and extract that document.
+
 ## Limits
 
 The model cannot raise these:

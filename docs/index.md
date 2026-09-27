@@ -24,7 +24,7 @@ agents can query HKEx live.
 - [Configuration reference](configuration.md)
 - [CLI reference](cli.md)
 - [MCP server](mcp.md)
-- [Live MCP gateway](live-mcp.md) — the hosted, no-install endpoint
+- [Live MCP gateway](live-mcp.md) — the hosted, no-install endpoint, with search filters and facet browsing
 - [AI agent support](ai-agents.md)
 - [Try it locally (`examples/`)](https://github.com/simonplmak-cloud/hkex-filing-scraper/tree/main/examples)
 

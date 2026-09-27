@@ -17,7 +17,7 @@ databases are *source-available* rather than OSI-approved open source.
   license, regardless of whether an enterprise edition exists alongside it.
 - Every sink declares its license and OSI status in the registry (`SinkSpec.license`,
   `SinkSpec.source_available`), and the support matrix documents it. Source-available
-  engines are only accepted as clearly labelled exceptions.
+  engines are only accepted as clearly labeled exceptions.
 - Keep **one driver per engine, optional**. No driver may be promoted to a base dependency;
   the core stays `requests` + `beautifulsoup4`.
 - The MySQL/MariaDB (`PyMySQL`) and SQLite (stdlib) sinks landed first; later releases added

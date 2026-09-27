@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Advanced filtering and metadata browsing on the live MCP gateway.**
+  `search_filings` gains `title_query`, `document_type`, `category`, and `stock_name` filters
+  alongside `stock_code`, and a new `list_filing_facets` tool browses the categories, document
+  types, and stock codes present in a date window, with counts. Search results now carry
+  `fileType`, `sizeText`, `category`, and `newsId` metadata, and category values are
+  HTML-entity decoded. See [docs/live-mcp.md](docs/live-mcp.md).
+
+### Changed
+
+- **US-English terminology pass across the docs** — UK spellings (`behaviour`, `labelled`,
+  `colour`) corrected per [docs/STYLE.md](docs/STYLE.md), and the live-gateway tools are
+  documented with filter semantics and runnable examples.
+
 ## [2.4.0] - 2026-09-20
 
 ### Added

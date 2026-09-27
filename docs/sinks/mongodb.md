@@ -2,7 +2,7 @@
 
 Persist filings, document payloads, coverage rows, and graph edges to MongoDB.
 
-- License: **SSPL** — **not OSI-approved** (source-available). Accepted as a labelled exception
+- License: **SSPL** — **not OSI-approved** (source-available). Accepted as a labeled exception
   per [ADR 0003](../adr/0003-sink-support-policy.md).
 - Driver: [`pymongo`](https://pypi.org/project/pymongo/) (Apache-2.0).
 - Extra: `mongodb`.

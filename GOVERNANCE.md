@@ -51,7 +51,7 @@ the reasoning in the relevant issue, PR, or ADR.
 ## Scope and support policy
 
 The project supports open-source database engines; source-available engines (MongoDB, SurrealDB)
-are included as labelled exceptions. The acceptance criteria for a new sink are defined in
+are included as labeled exceptions. The acceptance criteria for a new sink are defined in
 [ADR 0003](docs/adr/0003-sink-support-policy.md).
 
 ## Code of conduct and security

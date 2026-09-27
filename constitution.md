@@ -131,7 +131,7 @@ tests/           # pure unit tests (no DB/network)
 | Relational sinks for SQL teams | PostgreSQL, MySQL/MariaDB, SQLite let downstream teams use tooling they already run |
 | SurrealDB as the graph/document sink | Native graph edges, SCHEMAFULL integrity, parameterized RPC for large payloads |
 | Sink selection via `DATABASE_TARGET` | An ordered CSV list of sink ids; order sets read precedence (first read-capable sink). No silent default — unset or unknown fails fast |
-| Open-source-first support policy | OSI-approved engines by default; source-available engines (SurrealDB, and later MongoDB) are explicit, labelled exceptions (see `docs/adr/0003-sink-support-policy.md`) |
+| Open-source-first support policy | OSI-approved engines by default; source-available engines (SurrealDB, and later MongoDB) are explicit, labeled exceptions (see `docs/adr/0003-sink-support-policy.md`) |
 | Two-phase pipeline (metadata → documents) | Decouples fast metadata ingestion from slow document processing; enables backfill and incremental updates |
 | CLI-first, not GUI-first | Maximizes composability with scripts, cron jobs, and CI/CD pipelines |
 | Undocumented JSON API over browser automation | Faster, more reliable batch scraping; no Selenium dependency |

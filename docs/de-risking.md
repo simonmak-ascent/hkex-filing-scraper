@@ -25,7 +25,7 @@ Living document. Reviewed at every release. Scores are **L×I** (likelihood × i
 | R17 | Repository controls weaker than assumed | 3 | 4 | 12 | branch protection, conversation resolution · **added:** strict up-to-date status checks, SHA-pinned Actions. Code-owner review and commit signatures deferred: a solo maintainer cannot satisfy a required approval without using the admin override, which bypasses every check | C1 |
 | R18 | Broad PAT used as the wiki-mirror secret (blast radius, shared expiry) | 3 | 4 | 12 | secret scanning + push protection, workflow limited to `push`→`main`/dispatch, `contents: read`, `::add-mask::`, `wiki` environment gate · **added:** rotation runbook in SECURITY.md. A dedicated `repo`-only token is still recommended | C1 |
 
-## High-leverage controls (do these first)
+## High-impact controls (do these first)
 
 1. **R1 — recorded HKEx fixtures + canary.** The only risk that can make the tool silently wrong.
 2. **R4 — docs-consistency test.** Prevents the drift that already happened.
