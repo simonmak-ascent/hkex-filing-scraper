@@ -94,6 +94,21 @@ class TestSchemas:
         for name in ("stock_code", "title_query", "document_type", "category", "stock_name"):
             assert name in props
 
+    def test_every_tool_declares_annotations_and_output_schema(self):
+        for schema in live_mcp.TOOL_SCHEMAS:
+            annotations = schema.get("annotations", {})
+            assert annotations.get("readOnlyHint") is True, schema["name"]
+            assert annotations.get("destructiveHint") is False, schema["name"]
+            assert annotations.get("openWorldHint") is True, schema["name"]
+            output = schema.get("outputSchema", {})
+            assert output.get("type") == "object", schema["name"]
+            assert "result" in output.get("properties", {}), schema["name"]
+
+    def test_every_parameter_has_a_description(self):
+        for schema in live_mcp.TOOL_SCHEMAS:
+            for name, prop in schema["inputSchema"]["properties"].items():
+                assert prop.get("description"), f"{schema['name']}.{name} lacks a description"
+
 
 class TestHandleTool:
     def test_unknown_tool(self):

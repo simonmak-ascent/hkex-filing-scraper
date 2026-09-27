@@ -462,21 +462,86 @@ TOOLS: List[Callable[..., Any]] = [
 ]
 
 
+# Read-only, idempotent, network-backed: the annotations every live tool carries.
+_TOOL_ANNOTATIONS: Dict[str, bool] = {
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": True,
+}
+
+# One facet entry: a distinct metadata value and how many filings carry it.
+_FACET_ENTRY: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "value": {"type": "string", "description": "The category, file type, or stock code"},
+        "count": {"type": "integer", "description": "Filings carrying this value"},
+    },
+    "required": ["value", "count"],
+}
+
+# One returned filing, with the metadata the gateway surfaces.
+_FILING_ENTRY: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "date": {"type": "string", "description": "Release date, DD/MM/YYYY"},
+        "stockCode": {"type": "string"},
+        "stockName": {"type": "string"},
+        "title": {"type": "string"},
+        "link": {"type": "string", "description": "HKEx document URL"},
+        "fileType": {"type": "string", "description": "PDF, HTML, XLSX, ..."},
+        "sizeText": {"type": "string", "description": "HKEx-reported size, e.g. 53KB"},
+        "category": {"type": "string", "description": "HKEx headline category"},
+        "newsId": {"type": "string", "description": "HKEx news id"},
+    },
+    "required": ["stockCode", "title", "link"],
+}
+
+
+def _structured_output(fields: Dict[str, Any]) -> Dict[str, Any]:
+    """Wrap a tool's return object in the ``{"result": ...}`` structured-content shape."""
+    return {
+        "type": "object",
+        "properties": {"result": fields},
+        "required": ["result"],
+    }
+
+
 # Explicit JSON Schemas for the four tools, used by the transport-agnostic shim and tests.
 TOOL_SCHEMAS: List[Dict[str, Any]] = [
     {
         "name": "get_server_info",
         "description": get_server_info.__doc__ or "",
+        "annotations": dict(_TOOL_ANNOTATIONS),
         "inputSchema": {
             "type": "object",
             "properties": {},
             "required": [],
             "additionalProperties": False,
         },
+        "outputSchema": _structured_output(
+            {
+                "type": "object",
+                "description": "Gateway version, transport, tool list, filters, and hard limits.",
+                "properties": {
+                    "name": {"type": "string"},
+                    "version": {"type": "string"},
+                    "transport": {"type": "string"},
+                    "live": {"type": "boolean"},
+                    "storage": {"type": "string"},
+                    "read_only": {"type": "boolean"},
+                    "tools": {"type": "array", "items": {"type": "string"}},
+                    "filters": {"type": "array", "items": {"type": "string"}},
+                    "limits": {"type": "object"},
+                    "extraction": {"type": "object"},
+                },
+            }
+        ),
     },
     {
         "name": "search_filings",
         "description": search_filings.__doc__ or "",
+        "annotations": dict(_TOOL_ANNOTATIONS),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -502,15 +567,43 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
                     "type": "string",
                     "description": "Optional case-insensitive substring of the stock short name",
                 },
-                "max_results": {"type": "integer", "minimum": 1, "maximum": MAX_MAX_RESULTS},
+                "max_results": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": MAX_MAX_RESULTS,
+                    "description": "Maximum filings to fetch and return (default 50, cap 200)",
+                },
             },
             "required": ["from_date", "to_date"],
             "additionalProperties": False,
         },
+        "outputSchema": _structured_output(
+            {
+                "type": "object",
+                "description": "The filings matching the window and filters.",
+                "properties": {
+                    "from": {"type": "string", "description": "Window start, YYYY-MM-DD"},
+                    "to": {"type": "string", "description": "Window end, YYYY-MM-DD"},
+                    "count": {"type": "integer", "description": "Filings returned"},
+                    "total_reported": {
+                        "type": ["integer", "null"],
+                        "description": "HKEx-reported total for the window, when known",
+                    },
+                    "filters": {"type": "object", "description": "The filters applied"},
+                    "filings": {
+                        "type": "array",
+                        "description": "One entry per filing",
+                        "items": _FILING_ENTRY,
+                    },
+                },
+                "required": ["from", "to", "count", "filings"],
+            }
+        ),
     },
     {
         "name": "list_filing_facets",
         "description": list_filing_facets.__doc__ or "",
+        "annotations": dict(_TOOL_ANNOTATIONS),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -520,15 +613,41 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
                     "type": "string",
                     "description": "Optional exact HKEx stock code to narrow the facets",
                 },
-                "max_results": {"type": "integer", "minimum": 1, "maximum": MAX_MAX_RESULTS},
+                "max_results": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": MAX_MAX_RESULTS,
+                    "description": "Maximum filings to scan (default 50, cap 200)",
+                },
             },
             "required": ["from_date", "to_date"],
             "additionalProperties": False,
         },
+        "outputSchema": _structured_output(
+            {
+                "type": "object",
+                "description": "Counts of the window's categories, document types, and stock codes.",
+                "properties": {
+                    "from": {"type": "string", "description": "Window start, YYYY-MM-DD"},
+                    "to": {"type": "string", "description": "Window end, YYYY-MM-DD"},
+                    "count": {"type": "integer", "description": "Filings scanned"},
+                    "total_reported": {"type": ["integer", "null"]},
+                    "stock_code_filter": {"type": "string"},
+                    "distinct_categories": {"type": "integer"},
+                    "distinct_document_types": {"type": "integer"},
+                    "distinct_stock_codes": {"type": "integer"},
+                    "categories": {"type": "array", "items": _FACET_ENTRY},
+                    "document_types": {"type": "array", "items": _FACET_ENTRY},
+                    "stock_codes": {"type": "array", "items": _FACET_ENTRY},
+                },
+                "required": ["from", "to", "count"],
+            }
+        ),
     },
     {
         "name": "get_filing",
         "description": get_filing.__doc__ or "",
+        "annotations": dict(_TOOL_ANNOTATIONS),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -538,6 +657,23 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
             "required": ["link"],
             "additionalProperties": False,
         },
+        "outputSchema": _structured_output(
+            {
+                "type": "object",
+                "description": "The downloaded document, with text and tables when extract is true.",
+                "properties": {
+                    "link": {"type": "string"},
+                    "size_bytes": {"type": "integer"},
+                    "content_type": {"type": "string"},
+                    "document_text": {"type": "string", "description": "Extracted Markdown text"},
+                    "text_length": {"type": "integer"},
+                    "text_truncated": {"type": "boolean"},
+                    "tables": {"type": "array", "items": {"type": "object"}},
+                    "tables_omitted": {"type": "integer"},
+                },
+                "required": ["link", "size_bytes"],
+            }
+        ),
     },
 ]
 
