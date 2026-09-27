@@ -156,6 +156,10 @@ class TestTolerantParsing:
         assert parsed["date"] == "11/02/2026"
         assert parsed["link"].endswith("2026021100854.pdf")
 
+    def test_category_html_entities_are_decoded(self):
+        parsed = api._parse_api_record({"LONG_TEXT": "A &#x2f; B &amp; C"})
+        assert parsed["category"] == "A / B & C"
+
     @pytest.mark.parametrize(
         "record",
         [

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import re
 from calendar import monthrange
 from datetime import datetime
@@ -80,7 +81,7 @@ def _parse_api_record(record: dict) -> dict:
         # faceting; the scraper pipeline reads only the keys above.
         "fileType": _as_text(record.get("FILE_TYPE")).strip(),
         "sizeText": _as_text(record.get("FILE_INFO")).strip(),
-        "category": squash_ws(_as_text(record.get("LONG_TEXT"))),
+        "category": squash_ws(html.unescape(_as_text(record.get("LONG_TEXT")))),
         "newsId": _as_text(record.get("NEWS_ID")).strip(),
     }
 
