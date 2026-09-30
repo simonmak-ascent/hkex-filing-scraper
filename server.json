@@ -38,5 +38,11 @@
         "type": "stdio"
       }
     }
+  ],
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/simonplmak-cloud/hkex-filing-scraper/main/docs/social_preview.png",
+      "mimeType": "image/png"
+    }
   ]
 }
