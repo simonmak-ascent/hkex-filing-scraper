@@ -1,0 +1,29 @@
+{
+  "$schema": "https://glama.ai/mcp/schemas/server.json",
+  "maintainers": ["simonplmak-cloud"],
+  "name": "hkex-filings",
+  "description": "Live HKEx (Hong Kong Stock Exchange) regulatory filings for AI agents — search 25+ years of filings, download and extract text and tables, and inspect scrape coverage. Read-only.",
+  "repository": "https://github.com/simonplmak-cloud/hkex-filing-scraper",
+  "license": "MIT",
+  "runtime": "python",
+  "installInstructions": {
+    "pip": "pip install 'hkex-filing-scraper[mcp]' && hkex-scraper-mcp",
+    "uvx": "uvx --from hkex-filing-scraper hkex-scraper-mcp"
+  },
+  "categories": [
+    "finance",
+    "databases",
+    "research-and-data",
+    "web-scraping"
+  ],
+  "keywords": [
+    "hkex",
+    "hong-kong",
+    "stock-exchange",
+    "filings",
+    "regulatory-filings",
+    "financial-data",
+    "mcp",
+    "model-context-protocol"
+  ]
+}
