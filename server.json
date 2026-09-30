@@ -3,7 +3,7 @@
   "name": "io.github.simonplmak-cloud/hkex-filings",
   "title": "HKEx Filings",
   "description": "Live HKEx (Hong Kong Stock Exchange) regulatory filings for AI agents.",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "websiteUrl": "https://hkex-listco-updates.ascent-partners.com/",
   "repository": {
     "url": "https://github.com/simonplmak-cloud/hkex-filing-scraper",
