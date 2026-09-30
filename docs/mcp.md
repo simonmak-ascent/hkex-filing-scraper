@@ -83,8 +83,7 @@ All tools are annotated `readOnlyHint: true`, `destructiveHint: false`, and
 | `get_filing` | One filing's metadata plus extracted document text and tables. |
 | `get_filings` | Several filings in one call (up to 50 ids). |
 | `get_coverage` | Per-chunk scrape coverage, with a date filter and totals. |
-| `get_parity` | Per-sink filing counts and the spread (two or more sinks). |
-| `verify_sinks` | Cross-sink comparison of filing ids and document hashes (two or more sinks). |
+| `verify_sinks` | Cross-sink check (two or more sinks): `mode="hashes"` compares filing ids and document hashes, `mode="counts"` compares per-sink counts and the spread. |
 | `list_references` | Graph edges for a company: `referenced_by` (filings that mention it) or `owned` (its own filings). |
 
 List results carry an explicit completeness envelope — `returned_count`, `total_count`,

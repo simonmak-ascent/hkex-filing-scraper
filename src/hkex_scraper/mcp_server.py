@@ -966,7 +966,8 @@ def count_filings(
 
     Choose between: this tool gives per-sink totals across every configured sink; get_statistics
     breaks a single population down by one dimension; get_coverage reports scrape coverage by
-    month; get_parity compares counts across sinks; verify_sinks checks per-filing hashes. With
+    month; verify_sinks(mode="counts") compares counts across sinks and mode="hashes" checks
+    per-filing hashes. With
     no filters this returns a per-sink total; with filters it returns the count of matching
     filings per sink (relational sinks only — others report an unsupported error). Counts only;
     it does not return rows.
@@ -1292,7 +1293,7 @@ def get_coverage(
 ) -> Dict[str, Any]:
     """Use this to report scrape coverage per monthly chunk, with totals.
 
-    Use get_statistics for filing counts grouped by a dimension, or get_parity for cross-sink
+    Use get_statistics for filing counts grouped by a dimension, or verify_sinks for cross-sink
     comparison. ``date_from``/``date_to`` (``YYYY-MM-DD``) filter by chunk month. ``limit``
     caps how many chunks are returned, but ``totals`` always aggregate the full filtered
     range. Rows are newest-first. Read-only.
@@ -1301,26 +1302,13 @@ def get_coverage(
 
 
 @_as_tool
-def get_parity(
-    sinks: Annotated[
-        str, Field(description="Restrict to a subset of sink ids, comma-separated; empty = all.")
-    ] = "",
-) -> Dict[str, Any]:
-    """Use this to compare filing counts across two or more configured sinks.
-
-    Use verify_sinks instead for a hash-level comparison of individual filings. Choose count_filings
-    for a per-sink total, get_statistics for a grouped breakdown, and get_coverage for monthly
-    scrape coverage. Returns
-    per-sink counts and the spread; ``parity`` is OK when the spread is zero. ``sinks`` is a
-    comma-separated list of sink ids (discover them via list_sinks); empty compares every
-    configured sink, and the subset must still contain at least two sinks or the call fails.
-    This tool is read-only.
-    """
-    return _tool_get_parity(sinks)
-
-
-@_as_tool
 def verify_sinks(
+    mode: Annotated[
+        str,
+        Field(
+            description='Comparison depth: "hashes" (default) compares per-filing ids and document hashes; "counts" is a quick per-sink count parity check.'
+        ),
+    ] = "hashes",
     sample_size: Annotated[
         int, Field(description="Max examples to return per problem bucket (1..50).")
     ] = VERIFY_SAMPLE,
@@ -1328,15 +1316,22 @@ def verify_sinks(
         str, Field(description="Restrict to a subset of sink ids, comma-separated; empty = all.")
     ] = "",
 ) -> Dict[str, Any]:
-    """Use this to check that configured sinks hold the same filings and document hashes.
+    """Use this to check that configured sinks agree on their filings.
 
-    Use get_parity instead for a quicker count-only check. Compares (filing_id,
-    document_sha256) sets across comparable sinks and returns a bounded sample of any
-    missing/extra/mismatched ids. Parameter relationships: ``sinks`` must list two or more
-    comparable sink ids from list_sinks (empty compares every comparable pair); ``sample_size``
-    bounds the examples returned per problem bucket, not the comparison itself. This tool is
-    read-only.
+    ``mode="hashes"`` (default) compares (filing_id, document_sha256) sets across comparable
+    sinks and returns a bounded sample of any missing/extra/mismatched ids. ``mode="counts"``
+    runs a faster count-only parity check, returning per-sink counts and the spread
+    (``parity`` is OK when the spread is zero). For a single-sink total use count_filings, for
+    a grouped breakdown use get_statistics, and for monthly scrape coverage use get_coverage.
+    Parameter relationships: ``sinks`` must list two or more comparable sink ids from
+    list_sinks (empty compares every comparable pair); ``sample_size`` bounds the examples
+    returned per problem bucket, not the comparison itself, and is ignored by ``mode="counts"``.
+    This tool is read-only.
     """
+    if mode == "counts":
+        return _tool_get_parity(sinks)
+    if mode != "hashes":
+        raise McpError(f"mode must be 'hashes' or 'counts', got '{mode}'")
     return _tool_verify_sinks(sample_size, sinks)
 
 
@@ -1382,7 +1377,6 @@ TOOLS: List[Callable[..., Any]] = [
     get_filing,
     get_filings,
     get_coverage,
-    get_parity,
     verify_sinks,
     list_references,
 ]
