@@ -51,3 +51,7 @@ vdd/
 
 # difflens local artifacts
 .difflens/
+
+# Local marketing screenshots
+reddit-*.png
+x-compose-hkex.png
