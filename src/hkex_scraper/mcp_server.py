@@ -891,7 +891,8 @@ def get_server_info(
     ``include`` is one of: summary (server metadata only, default), sinks (also returns the
     list_sinks payload), or config (also returns the configuration payload) — so you can pull
     the summary and the detail in a single call. Returns server metadata only; it reads no
-    filings. This tool is read-only.
+    filings. include="sinks" is an alias for the list_sinks payload — call list_sinks directly
+    when sinks are the only thing you need. This tool is read-only.
     """
     return _tool_get_server_info(include)
 
@@ -907,7 +908,9 @@ def list_sinks(
     Use get_server_info (with include="config") for the raw DATABASE_TARGET string or a
     one-line summary instead. Pass ``sink_id`` to inspect one sink without the full list.
     Returns every known sink id with its license, optional extra, configured/available status,
-    per-sink capabilities, and which sink serves reads. Reads no filings.
+    per-sink capabilities, and which sink serves reads. Reads no filings. get_server_info with
+    include="sinks" returns this same payload; call this tool directly when per-sink detail is
+    all you need.
     """
     return _tool_list_sinks(sink_id)
 
@@ -963,9 +966,10 @@ def count_filings(
 
     Choose between: this tool gives per-sink totals across every configured sink; get_statistics
     breaks a single population down by one dimension; get_coverage reports scrape coverage by
-    month. With no filters this returns a per-sink total; with filters it returns the count of
-    matching filings per sink (relational sinks only — others report an unsupported error).
-    Counts only; it does not return rows.
+    month; get_parity compares counts across sinks; verify_sinks checks per-filing hashes. With
+    no filters this returns a per-sink total; with filters it returns the count of matching
+    filings per sink (relational sinks only — others report an unsupported error). Counts only;
+    it does not return rows.
     """
     return _tool_count_filings(
         ticker, filing_type, filing_category, document_status, date_from, date_to
@@ -1304,7 +1308,9 @@ def get_parity(
 ) -> Dict[str, Any]:
     """Use this to compare filing counts across two or more configured sinks.
 
-    Use verify_sinks instead for a hash-level comparison of individual filings. Returns
+    Use verify_sinks instead for a hash-level comparison of individual filings. Choose count_filings
+    for a per-sink total, get_statistics for a grouped breakdown, and get_coverage for monthly
+    scrape coverage. Returns
     per-sink counts and the spread; ``parity`` is OK when the spread is zero. ``sinks`` is a
     comma-separated list of sink ids (discover them via list_sinks); empty compares every
     configured sink, and the subset must still contain at least two sinks or the call fails.
