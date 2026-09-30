@@ -66,7 +66,7 @@ DEFAULT_TOP_N = 20
 
 INSTRUCTIONS = (
     "Read-only access to a scraped HKEx regulatory-filings corpus. Reads are served by "
-    "the first configured database sink (DATABASE_TARGET order); call get_config or "
+    "the first configured database sink (DATABASE_TARGET order); call get_server_info or "
     "list_sinks if unsure, and describe_schema before filtering. Use search_filings with "
     "filters (ticker, filing_type, document_status, date_from/date_to, ...) to find ids; "
     "search_documents for full-text search over extracted text; get_statistics for counts "
@@ -129,7 +129,7 @@ def _read_sink() -> sinks.Sink:
     if sink is None:
         raise McpError(
             "no configured sink supports reads; set DATABASE_TARGET to at least one "
-            "read-capable sink (see get_config)"
+            "read-capable sink (see get_server_info)"
         )
     return sink
 
@@ -436,7 +436,7 @@ def _tool_count_filings(
 ) -> Dict[str, Any]:
     configured = _enabled_sinks()
     if not configured:
-        raise McpError("no sinks are configured; set DATABASE_TARGET (see get_config)")
+        raise McpError("no sinks are configured; set DATABASE_TARGET (see get_server_info)")
     filtered = any((ticker, filing_type, filing_category, document_status, date_from, date_to))
     query = (
         _filing_query(
@@ -881,15 +881,15 @@ def get_server_info(
     include: Annotated[
         IncludeKind,
         Field(
-            description="summary (server metadata only), sinks, or config; sinks/config fold in list_sinks/get_config output."
+            description="summary (server metadata only), sinks, or config; sinks/config fold in list_sinks output and the configuration payload."
         ),
     ] = "summary",
 ) -> Dict[str, Any]:
     """Use this first to learn the server version, configured sinks, and read sink.
 
-    Use get_config for the raw configuration values or list_sinks for per-sink detail.
+    Use include="config" for the raw configuration values or list_sinks for per-sink detail.
     ``include`` is one of: summary (server metadata only, default), sinks (also returns the
-    list_sinks payload), or config (also returns the get_config payload) — so you can pull
+    list_sinks payload), or config (also returns the configuration payload) — so you can pull
     the summary and the detail in a single call. Returns server metadata only; it reads no
     filings. This tool is read-only.
     """
@@ -904,30 +904,12 @@ def list_sinks(
 ) -> Dict[str, Any]:
     """Use this when the user asks which databases are configured or their capabilities.
 
-    Use get_config for the raw DATABASE_TARGET string or get_server_info for a one-line
-    summary instead. Pass ``sink_id`` to inspect one sink without the full list. Returns
-    every known sink id with its license, optional extra, configured/available status,
+    Use get_server_info (with include="config") for the raw DATABASE_TARGET string or a
+    one-line summary instead. Pass ``sink_id`` to inspect one sink without the full list.
+    Returns every known sink id with its license, optional extra, configured/available status,
     per-sink capabilities, and which sink serves reads. Reads no filings.
     """
     return _tool_list_sinks(sink_id)
-
-
-@_as_tool
-def get_config(
-    key: Annotated[
-        str,
-        Field(description="Return a single setting, e.g. 'database_target'; empty returns all."),
-    ] = "",
-) -> Dict[str, Any]:
-    """Use this to inspect the active configuration (DATABASE_TARGET, read sink, graph).
-
-    Prefer this over list_sinks when you need the raw config values rather than per-sink
-    capabilities, and over get_server_info when you need more than a one-line summary.
-    Pass ``key`` to return one value; valid keys are database_target, sink_ids, read_sink,
-    company_table, company_id_pattern, and max_download_workers. Empty returns the whole
-    map. Never returns credentials. This tool is read-only.
-    """
-    return _tool_get_config(key)
 
 
 @_as_tool
@@ -979,10 +961,11 @@ def count_filings(
 ) -> Dict[str, Any]:
     """Use this to report how many filings each configured sink holds.
 
-    Use get_statistics instead to break the count down by a dimension. With no filters this
-    returns a per-sink total; with filters it returns the count of matching filings per sink
-    (relational sinks only — others report an unsupported error). Counts only; it does not
-    return rows.
+    Choose between: this tool gives per-sink totals across every configured sink; get_statistics
+    breaks a single population down by one dimension; get_coverage reports scrape coverage by
+    month. With no filters this returns a per-sink total; with filters it returns the count of
+    matching filings per sink (relational sinks only — others report an unsupported error).
+    Counts only; it does not return rows.
     """
     return _tool_count_filings(
         ticker, filing_type, filing_category, document_status, date_from, date_to
@@ -1004,7 +987,8 @@ def list_tickers(
     Use list_companies instead to include company names and filing counts. ``ticker`` is a
     case-insensitive substring match (e.g. '0700' matches '0700.HK'); empty lists every
     ticker, alphabetically sorted and paged via ``limit``/``offset``. Use search_filings to
-    fetch filings for a ticker.
+    fetch filings for a ticker. Choose list_companies when you need company names or filing
+    counts alongside the code.
     """
     return _tool_list_tickers(limit, offset, ticker)
 
@@ -1214,8 +1198,9 @@ def get_statistics(
 ) -> Dict[str, Any]:
     """Use this to count filings grouped by one dimension.
 
-    Use count_filings instead for a plain per-sink total without a breakdown. ``group_by``
-    is one of: company_ticker (default), filing_type, filing_category, document_status,
+    Choose between: count_filings gives a per-sink total across every sink, and get_coverage
+    reports scrape coverage by month; use this tool for a grouped breakdown of one population.
+    ``group_by`` is one of: company_ticker (default), filing_type, filing_category, document_status,
     exchange. Optional filters narrow the population and combine with AND semantics (a
     filing must match every filter you set). ``top_n`` caps the returned buckets and
     ``min_count`` drops small buckets, but ``total`` still counts every matching filing.
@@ -1236,29 +1221,6 @@ def get_statistics(
         top_n,
         min_count,
     )
-
-
-@_as_tool
-def list_pending_filings(
-    document_status: Annotated[
-        str,
-        Field(
-            description="Document status(es): unprocessed (default), processed, skipped, failed; comma-separate for several."
-        ),
-    ] = "unprocessed",
-    limit: Annotated[
-        int, Field(description="Maximum filings to return (1..100).")
-    ] = DEFAULT_PAGE_SIZE,
-    offset: Annotated[int, Field(description="Zero-based offset for paging.")] = 0,
-) -> Dict[str, Any]:
-    """Use this to list filings by document-processing status.
-
-    Use search_filings instead for arbitrary metadata filters. Defaults to ``unprocessed``
-    (no document yet); accepts processed, skipped, failed, or a comma-separated mix.
-    ``total_count`` is only populated for the default ``unprocessed`` status; other statuses
-    report ``has_more`` from a full page without a total. ``offset`` pages through results.
-    """
-    return _tool_list_pending_filings(document_status, limit, offset)
 
 
 @_as_tool
@@ -1308,7 +1270,10 @@ def get_filings(
 
     Use get_filing instead to read a single filing. Returns each filing's metadata plus,
     when ``include_text`` is true, a bounded text window. Ids not found are listed in
-    ``not_found``. Text is off by default. Read-only.
+    ``not_found``. Text is off by default. Parameter relationships: ``filing_ids`` must come
+    from search_filings (1..50 ids); ``max_text_chars`` applies per filing and only takes
+    effect when ``include_text`` is true; ``include_tables`` is independent of the text window.
+    Read-only.
     """
     return _tool_get_filings(filing_ids, include_text, max_text_chars, include_tables)
 
@@ -1361,9 +1326,10 @@ def verify_sinks(
 
     Use get_parity instead for a quicker count-only check. Compares (filing_id,
     document_sha256) sets across comparable sinks and returns a bounded sample of any
-    missing/extra/mismatched ids. ``sample_size`` caps each sample to 1..50 examples;
-    ``sinks`` is a comma-separated list of sink ids (see list_sinks) that must still contain
-    at least two sinks. Requires two or more comparable sinks. This tool is read-only.
+    missing/extra/mismatched ids. Parameter relationships: ``sinks`` must list two or more
+    comparable sink ids from list_sinks (empty compares every comparable pair); ``sample_size``
+    bounds the examples returned per problem bucket, not the comparison itself. This tool is
+    read-only.
     """
     return _tool_verify_sinks(sample_size, sinks)
 
@@ -1400,7 +1366,6 @@ def list_references(
 TOOLS: List[Callable[..., Any]] = [
     get_server_info,
     list_sinks,
-    get_config,
     describe_schema,
     count_filings,
     list_tickers,
@@ -1408,7 +1373,6 @@ TOOLS: List[Callable[..., Any]] = [
     search_filings,
     search_documents,
     get_statistics,
-    list_pending_filings,
     get_filing,
     get_filings,
     get_coverage,

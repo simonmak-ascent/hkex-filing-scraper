@@ -202,7 +202,6 @@ def fake_registry(monkeypatch):
 def test_tools_never_write_to_stdout(fake_read, capsys):
     mcp_server.get_server_info()
     mcp_server.list_sinks()
-    mcp_server.get_config()
     mcp_server.count_filings()
     mcp_server.search_filings(ticker="0700.HK")
     mcp_server.get_filing("f1")
@@ -397,29 +396,6 @@ def test_get_coverage_totals(fake_read):
     result = mcp_server.get_coverage()
     assert result["totals"]["api_count"] == 1
     assert result["totals"]["coverage_percent"] == 0.0
-
-
-def test_list_pending_filings_status_filter(fake_read):
-    result = mcp_server.list_pending_filings(document_status="unprocessed")
-    assert result["document_status"] == ["unprocessed"]
-    assert result["returned_count"] == 2
-
-
-def test_list_pending_filings_pages_with_offset(fake_read):
-    result = mcp_server.list_pending_filings(document_status="unprocessed", offset=1)
-    assert result["returned_count"] == 1
-
-
-def test_get_config_returns_a_single_key(fake_read):
-    result = mcp_server.get_config(key="database_target")
-    assert result["key"] == "database_target"
-    assert "value" in result
-
-
-def test_get_config_rejects_unknown_key(fake_read):
-    with pytest.raises(ToolError) as excinfo:
-        mcp_server.get_config(key="nope")
-    assert "unknown config key" in str(excinfo.value)
 
 
 def test_list_sinks_filters_by_id(fake_read, fake_registry):
