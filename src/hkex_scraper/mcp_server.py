@@ -78,7 +78,9 @@ INSTRUCTIONS = (
 # Single-value parameters surfaced as JSON-schema enums. Keep these in sync with
 # ``sinks.base.SEARCH_ORDER_BY`` / ``sinks.base.AGGREGATE_GROUPS`` (asserted in tests).
 OrderBy = Literal["filing_date_desc", "filing_date_asc", "title_asc", "filing_id_asc"]
-GroupBy = Literal["company_ticker", "filing_type", "filing_category", "document_status", "exchange"]
+GroupBy = Literal[
+    "company_ticker", "filing_type", "filing_category", "document_status", "exchange", "sink"
+]
 Section = Literal["all", "filing", "document", "types", "query"]
 IncludeKind = Literal["summary", "sinks", "config"]
 ReferenceKind = Literal["referenced_by", "owned"]
@@ -666,7 +668,7 @@ def _tool_get_filing(
         _fail(error_code, sink.id)
     if detail is None:
         raise McpError(
-            f"filing_id '{filing_id}' was not found; use search_filings or list_tickers "
+            f"filing_id '{filing_id}' was not found; use search_filings or list_companies(view=\"tickers\") "
             "to discover ids"
         )
     return _window_detail(detail, include_text, text_offset, max_text_chars, include_tables)
@@ -840,7 +842,7 @@ _REFERENCE_KINDS = {"owned": "has_filing", "referenced_by": "references_filing"}
 def _tool_list_references(ticker: str, kind: str, limit: int, offset: int) -> Dict[str, Any]:
     ticker = (ticker or "").strip()
     if not ticker:
-        raise McpError("ticker is required; use list_tickers to discover tickers")
+        raise McpError('ticker is required; use list_companies(view="tickers") to discover tickers')
     edge_kind = _REFERENCE_KINDS.get(kind)
     if edge_kind is None:
         raise McpError("kind must be one of: referenced_by, owned")
@@ -935,86 +937,33 @@ def describe_schema(
 
 
 @_as_tool
-def count_filings(
-    ticker: Annotated[
-        str,
-        Field(description="Count only this ticker, e.g. 0700.HK; comma-separate to match several."),
-    ] = "",
-    filing_type: Annotated[
-        str,
-        Field(
-            description="Count only this filing type, e.g. 'Annual Report'; comma-separate for several."
-        ),
-    ] = "",
-    filing_category: Annotated[
-        str, Field(description="Count only this filing category, e.g. LISTED_COMPANY.")
-    ] = "",
-    document_status: Annotated[
-        str,
-        Field(
-            description="Count only this document status: processed, skipped, failed, or unprocessed."
-        ),
-    ] = "",
-    date_from: Annotated[
-        str, Field(description="Count only filings on/after this date, YYYY-MM-DD inclusive.")
-    ] = "",
-    date_to: Annotated[
-        str, Field(description="Count only filings on/before this date, YYYY-MM-DD inclusive.")
-    ] = "",
-) -> Dict[str, Any]:
-    """Use this to report how many filings each configured sink holds.
-
-    Choose between: this tool gives per-sink totals across every configured sink; get_statistics
-    breaks a single population down by one dimension; get_coverage reports scrape coverage by
-    month; verify_sinks(mode="counts") compares counts across sinks and mode="hashes" checks
-    per-filing hashes. With
-    no filters this returns a per-sink total; with filters it returns the count of matching
-    filings per sink (relational sinks only — others report an unsupported error). Counts only;
-    it does not return rows.
-    """
-    return _tool_count_filings(
-        ticker, filing_type, filing_category, document_status, date_from, date_to
-    )
-
-
-@_as_tool
-def list_tickers(
-    ticker: Annotated[
-        str, Field(description="Case-insensitive substring match, e.g. '0700'; empty lists all.")
-    ] = "",
-    limit: Annotated[
-        int, Field(description="Maximum tickers to return (1..1000).")
-    ] = DEFAULT_PAGE_SIZE,
-    offset: Annotated[int, Field(description="Zero-based offset for paging.")] = 0,
-) -> Dict[str, Any]:
-    """Use this to list the distinct company tickers that have filings.
-
-    Use list_companies instead to include company names and filing counts. ``ticker`` is a
-    case-insensitive substring match (e.g. '0700' matches '0700.HK'); empty lists every
-    ticker, alphabetically sorted and paged via ``limit``/``offset``. Use search_filings to
-    fetch filings for a ticker. Choose list_companies when you need company names or filing
-    counts alongside the code.
-    """
-    return _tool_list_tickers(limit, offset, ticker)
-
-
-@_as_tool
 def list_companies(
+    view: Annotated[
+        str,
+        Field(
+            description='What to list: "companies" (default) returns ticker + name + filing count; "tickers" returns just the distinct ticker codes.'
+        ),
+    ] = "companies",
     ticker: Annotated[
         str, Field(description="Case-insensitive substring match, e.g. '0700'; empty lists all.")
     ] = "",
     limit: Annotated[
-        int, Field(description="Maximum companies to return (1..100).")
+        int, Field(description="Maximum rows (1..100 for companies; 1..1000 for tickers).")
     ] = DEFAULT_PAGE_SIZE,
     offset: Annotated[int, Field(description="Zero-based offset for paging.")] = 0,
 ) -> Dict[str, Any]:
-    """Use this to list companies (ticker and name) with their filing counts.
+    """Use this to list companies, or just their ticker codes, that have filings.
 
-    Use list_tickers instead to list just the ticker codes. ``ticker`` is a case-insensitive
-    substring match (e.g. '0700' matches '0700.HK'); empty returns every company, ordered by
-    filing count descending (ties broken by ticker ascending) and paged via
-    ``limit``/``offset``. Use search_filings for a company's filings. This tool is read-only.
+    ``view="companies"`` (default) returns each company's ticker, name, and filing count,
+    ordered by filing count descending (ties broken by ticker ascending). ``view="tickers"``
+    returns only the distinct ticker codes, alphabetically sorted and paged. ``ticker`` is a
+    case-insensitive substring match (e.g. '0700' matches '0700.HK'). Use search_filings to
+    fetch a company's filings. This tool is read-only.
     """
+    if view == "tickers":
+        return _tool_list_tickers(limit, offset, ticker)
+    if view != "companies":
+        raise McpError(f"view must be 'companies' or 'tickers', got '{view}'")
     return _tool_list_companies(ticker, limit, offset)
 
 
@@ -1162,7 +1111,10 @@ def search_documents(
 @_as_tool
 def get_statistics(
     group_by: Annotated[
-        GroupBy, Field(description="Dimension to count filings by.")
+        GroupBy,
+        Field(
+            description="Dimension to count filings by: company_ticker (default), filing_type, filing_category, document_status, exchange, or sink (per-sink totals across configured sinks)."
+        ),
     ] = "company_ticker",
     ticker: Annotated[
         str,
@@ -1201,16 +1153,22 @@ def get_statistics(
         int, Field(description="Only return buckets with at least this many filings (0 = all).")
     ] = 1,
 ) -> Dict[str, Any]:
-    """Use this to count filings grouped by one dimension.
+    """Use this to count filings grouped by one dimension, or per sink.
 
-    Choose between: count_filings gives a per-sink total across every sink, and get_coverage
-    reports scrape coverage by month; use this tool for a grouped breakdown of one population.
-    ``group_by`` is one of: company_ticker (default), filing_type, filing_category, document_status,
-    exchange. Optional filters narrow the population and combine with AND semantics (a
-    filing must match every filter you set). ``top_n`` caps the returned buckets and
+    Choose between: this tool gives a grouped breakdown of one population (or per-sink totals
+    when ``group_by="sink"``); get_coverage reports scrape coverage by month; verify_sinks
+    compares across sinks. ``group_by`` is one of: company_ticker (default), filing_type,
+    filing_category, document_status, exchange, or sink. Optional filters narrow the population
+    and combine with AND semantics (a filing must match every filter you set); ``group_by="sink"``
+    honours only ticker, filing_type, filing_category, document_status, date_from, and date_to,
+    and returns per-sink totals (relational sinks only). ``top_n`` caps the returned buckets and
     ``min_count`` drops small buckets, but ``total`` still counts every matching filing.
     Buckets are sorted by count descending. This tool is read-only.
     """
+    if group_by == "sink":
+        return _tool_count_filings(
+            ticker, filing_type, filing_category, document_status, date_from, date_to
+        )
     return _tool_get_statistics(
         group_by,
         ticker,
@@ -1321,8 +1279,8 @@ def verify_sinks(
     ``mode="hashes"`` (default) compares (filing_id, document_sha256) sets across comparable
     sinks and returns a bounded sample of any missing/extra/mismatched ids. ``mode="counts"``
     runs a faster count-only parity check, returning per-sink counts and the spread
-    (``parity`` is OK when the spread is zero). For a single-sink total use count_filings, for
-    a grouped breakdown use get_statistics, and for monthly scrape coverage use get_coverage.
+    (``parity`` is OK when the spread is zero). For a per-sink total or a grouped breakdown
+    use get_statistics, and for monthly scrape coverage use get_coverage.
     Parameter relationships: ``sinks`` must list two or more comparable sink ids from
     list_sinks (empty compares every comparable pair); ``sample_size`` bounds the examples
     returned per problem bucket, not the comparison itself, and is ignored by ``mode="counts"``.
@@ -1338,7 +1296,10 @@ def verify_sinks(
 @_as_tool
 def list_references(
     ticker: Annotated[
-        str, Field(description="Company ticker, e.g. 0700.HK; use list_tickers to discover.")
+        str,
+        Field(
+            description="Company ticker, e.g. 0700.HK; use list_companies(view='tickers') to discover."
+        ),
     ],
     kind: Annotated[
         ReferenceKind,
@@ -1356,7 +1317,7 @@ def list_references(
     Use search_filings(ticker=...) for a company's own filings or search_filings(
     referenced_ticker=...) to find mentions via the filing column. This reads the canonical
     edge tables keyed on ``ticker`` (format like 0700.HK; discover valid values via
-    list_tickers): ``kind="referenced_by"`` returns filings whose title mentions the company
+    list_companies(view="tickers")): ``kind="referenced_by"`` returns filings whose title mentions the company
     (cross-references), ``kind="owned"`` returns the company's own filings. Results are
     paged via ``limit``/``offset`` and stay empty until graph linking has been run. This
     tool is read-only.
@@ -1368,8 +1329,6 @@ TOOLS: List[Callable[..., Any]] = [
     get_server_info,
     list_sinks,
     describe_schema,
-    count_filings,
-    list_tickers,
     list_companies,
     search_filings,
     search_documents,

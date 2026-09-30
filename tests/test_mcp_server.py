@@ -202,7 +202,7 @@ def fake_registry(monkeypatch):
 def test_tools_never_write_to_stdout(fake_read, capsys):
     mcp_server.get_server_info()
     mcp_server.list_sinks()
-    mcp_server.count_filings()
+    mcp_server.get_statistics(group_by="sink")
     mcp_server.search_filings(ticker="0700.HK")
     mcp_server.get_filing("f1")
     captured = capsys.readouterr()
@@ -255,7 +255,7 @@ def test_search_filings_filters_by_title(fake_read):
 
 
 def test_ticker_paging_reports_completeness(fake_read):
-    result = mcp_server.list_tickers(limit=1)
+    result = mcp_server.list_companies(view="tickers", limit=1)
     assert result["returned_count"] == 1
     assert result["total_count"] == 2
     assert result["has_more"] is True
@@ -263,7 +263,7 @@ def test_ticker_paging_reports_completeness(fake_read):
 
 
 def test_count_filings_shape(fake_read):
-    result = mcp_server.count_filings()
+    result = mcp_server.get_statistics(group_by="sink")
     assert result["counts"] == {"sqlite": 2}
     assert result["read_sink"] == "sqlite"
 
@@ -303,7 +303,7 @@ def test_no_read_sink_is_an_actionable_error(monkeypatch):
     monkeypatch.setattr(mcp_server.sinks, "enabled_sinks", lambda: [])
     monkeypatch.setattr(mcp_server.sinks, "read_sink", lambda: None)
     with pytest.raises(ToolError) as excinfo:
-        mcp_server.list_tickers()
+        mcp_server.list_companies(view="tickers")
     assert "reads" in str(excinfo.value)
 
 
@@ -339,7 +339,7 @@ def test_order_by_and_group_by_are_enums():
     assert set(order_by["enum"]) == set(SEARCH_ORDER_BY)
     group_by = schemas["get_statistics"]["properties"]["group_by"]
     assert group_by["type"] == "string"
-    assert set(group_by["enum"]) == set(AGGREGATE_GROUPS)
+    assert set(group_by["enum"]) == set(AGGREGATE_GROUPS) | {"sink"}
 
 
 def test_search_documents_requires_query(fake_read):
@@ -377,7 +377,7 @@ def test_list_companies_shape(fake_read):
 
 
 def test_list_tickers_filters_by_ticker(fake_read):
-    result = mcp_server.list_tickers(ticker="0700")
+    result = mcp_server.list_companies(view="tickers", ticker="0700")
     assert result["items"] == ["0700.HK"]
 
 
@@ -421,7 +421,7 @@ def test_describe_schema_rejects_unknown_section(fake_read):
 
 
 def test_count_filings_filters(fake_read):
-    result = mcp_server.count_filings(ticker="0700.HK")
+    result = mcp_server.get_statistics(group_by="sink", ticker="0700.HK")
     assert result["filtered"] is True
     assert result["counts"] == {"sqlite": 1}
 

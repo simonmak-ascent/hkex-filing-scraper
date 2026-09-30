@@ -73,9 +73,7 @@ All tools are annotated `readOnlyHint: true`, `destructiveHint: false`, and
 | `list_sinks` | Every sink id with license, extra, configured/available status, and capabilities. |
 | `get_config` | `DATABASE_TARGET`, sink order, read sink, and graph settings (never credentials). |
 | `describe_schema` | Canonical filing/document field names, enums, and the query dimensions. |
-| `count_filings` | Per-sink filing counts. |
-| `list_tickers` | Paged, sorted distinct company tickers. |
-| `list_companies` | Companies (ticker + name) with their filing counts. |
+| `list_companies` | `view="companies"` (default) lists companies (ticker + name) with filing counts; `view="tickers"` lists the paged, sorted distinct tickers. |
 | `search_filings` | Filings filtered by ticker, stock code, title, type, category, status, exchange, referenced ticker, or date range. |
 | `search_documents` | Full-text search over extracted `document_text`, with a snippet when the sink supports it. |
 | `get_statistics` | Filing counts grouped by ticker, type, category, status, or exchange. |
@@ -117,8 +115,8 @@ scan; a database user without privilege logs a warning and search still works. T
 sinks remain scan-based for now.
 
 `get_statistics(group_by=...)` counts filings by `company_ticker` (default),
-`filing_type`, `filing_category`, `document_status`, or `exchange`, under the same
-filters.
+`filing_type`, `filing_category`, `document_status`, `exchange`, or `sink` (per-sink
+totals across configured sinks), under the same filters.
 
 ## Reading a filing
 
