@@ -84,6 +84,7 @@ GroupBy = Literal[
 Section = Literal["all", "filing", "document", "types", "query"]
 IncludeKind = Literal["summary", "sinks", "config"]
 ReferenceKind = Literal["referenced_by", "owned"]
+CompanyView = Literal["companies", "tickers"]
 
 
 class McpError(Exception):
@@ -902,7 +903,10 @@ def get_server_info(
 @_as_tool
 def list_sinks(
     sink_id: Annotated[
-        str, Field(description="Narrow to a single sink id, e.g. 'postgres'; empty returns all.")
+        str,
+        Field(
+            description="Narrow to one configured sink id, e.g. 'postgres'; empty returns all. Call with no argument to discover the valid ids."
+        ),
     ] = "",
 ) -> Dict[str, Any]:
     """Use this when the user asks which databases are configured or their capabilities.
@@ -939,7 +943,7 @@ def describe_schema(
 @_as_tool
 def list_companies(
     view: Annotated[
-        str,
+        CompanyView,
         Field(
             description='What to list: "companies" (default) returns ticker + name + filing count; "tickers" returns just the distinct ticker codes.'
         ),
@@ -957,8 +961,9 @@ def list_companies(
     ``view="companies"`` (default) returns each company's ticker, name, and filing count,
     ordered by filing count descending (ties broken by ticker ascending). ``view="tickers"``
     returns only the distinct ticker codes, alphabetically sorted and paged. ``ticker`` is a
-    case-insensitive substring match (e.g. '0700' matches '0700.HK'). Use search_filings to
-    fetch a company's filings. This tool is read-only.
+    case-insensitive substring match (e.g. '0700' matches '0700.HK'). Not for a company's
+    filings (use search_filings) or for aggregate counts (use get_statistics with
+    group_by="company_ticker"). This tool is read-only.
     """
     if view == "tickers":
         return _tool_list_tickers(limit, offset, ticker)
