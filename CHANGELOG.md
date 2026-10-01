@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Live MCP `get_filing` can page and search long documents.** New `offset` and
+  `max_chars` parameters return a window of the extracted text with `next_offset`
+  and `total_text_length`, and `query` searches the whole document and returns up
+  to 20 matches with offsets and surrounding text. Previously a long annual report
+  came back as one 300,000-character block, truncated with no way to read further.
+- Every live tool now carries a `title` (in `tools/list` and on the FastMCP
+  server), and the FastMCP server declares `idempotentHint` like the hosted one.
 - **Advanced filtering and metadata browsing on the live MCP gateway.**
   `search_filings` gains `title_query`, `document_type`, `category`, and `stock_name` filters
   alongside `stock_code`, and a new `list_filing_facets` tool browses the categories, document

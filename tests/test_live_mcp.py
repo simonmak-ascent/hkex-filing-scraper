@@ -302,6 +302,55 @@ class TestGetFiling:
         assert out["tables_omitted"] == 40 - live_mcp.MAX_TABLES
 
 
+class TestGetFilingPagingAndSearch:
+    URL = "https://www1.hkexnews.hk/a.pdf"
+    TEXT = "Revenue rose. " * 10 + "Dividend of HK$0.20 per share. " + "Other text. " * 10
+
+    def _patch(self, monkeypatch, text=None):
+        response = _FakeResponse(b"x" * 12)
+        monkeypatch.setattr(live_mcp.http, "make_session", lambda: _FakeSession(response))
+        monkeypatch.setattr(
+            extractor, "extract_content_with_tables", lambda raw, url: (text or self.TEXT, [])
+        )
+
+    def test_window_and_next_offset(self, monkeypatch):
+        self._patch(monkeypatch)
+        out = live_mcp._tool_get_filing(self.URL, max_chars=50)
+        assert out["document_text"] == self.TEXT[:50]
+        assert out["next_offset"] == 50
+        assert out["text_truncated"] is True
+        assert out["total_text_length"] == len(self.TEXT)
+        last = live_mcp._tool_get_filing(self.URL, offset=len(self.TEXT) - 10, max_chars=50)
+        assert last["document_text"] == self.TEXT[-10:]
+        assert last["next_offset"] is None
+        assert last["text_truncated"] is False
+
+    def test_query_returns_matches_with_offsets(self, monkeypatch):
+        self._patch(monkeypatch)
+        out = live_mcp._tool_get_filing(self.URL, query="dividend")
+        assert out["match_count"] == 1
+        match = out["matches"][0]
+        assert self.TEXT[match["offset"] :].startswith("Dividend")
+        assert "HK$0.20" in match["snippet"]
+        assert "document_text" not in out
+
+    def test_query_caps_matches(self, monkeypatch):
+        self._patch(monkeypatch, text="ab " * 100)
+        out = live_mcp._tool_get_filing(self.URL, query="ab")
+        assert out["match_count"] == 100
+        assert len(out["matches"]) == live_mcp.MAX_MATCHES
+
+    @pytest.mark.parametrize(
+        "kwargs", [{"offset": -1}, {"max_chars": 0}, {"max_chars": live_mcp.MAX_TEXT_CHARS + 1}]
+    )
+    def test_rejects_bad_window(self, kwargs):
+        with pytest.raises(live_mcp.McpError):
+            live_mcp._tool_get_filing(self.URL, **kwargs)
+
+    def test_every_tool_has_a_title(self):
+        assert all(schema.get("title") for schema in live_mcp.TOOL_SCHEMAS)
+
+
 @pytest.mark.skipif(not live_mcp._MCP_AVAILABLE, reason="mcp extra not installed")
 class TestServerAssembly:
     def test_build_server_registers_four_tools(self):

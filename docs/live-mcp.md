@@ -46,7 +46,7 @@ If the diagram does not render, it is also available as
 | `get_server_info` | Reports the gateway version, transport, and hard limits. Reads nothing. |
 | `search_filings` | Searches live filings in a date window (at most 31 days), optionally narrowed by stock code, title, document type, category, or stock name. |
 | `list_filing_facets` | Browses the categories, document types, and stock codes present in a date window, with counts — no document download. |
-| `get_filing` | Downloads one HKEx document and extracts its text and tables. |
+| `get_filing` | Downloads one HKEx document and extracts its text and tables. Long documents page with `offset`/`max_chars` (follow `next_offset`); `query` searches the whole document and returns matches with offsets. |
 
 Every tool is **read-only**. The gateway never writes, never runs schema DDL, and never
 fetches an arbitrary URL — `get_filing` accepts only HKEx document hosts.
@@ -109,7 +109,7 @@ curl -sS https://hkex-listco-updates.ascent-partners.com/api/mcp \
   }'
 ```
 
-Pass a search result's `link` to `get_filing` to download and extract that document.
+Pass a search result's `link` to `get_filing` to download and extract that document. For a long annual report, pass `query` (for example `"final dividend"`) to find the relevant passages, then read around a match with `offset` and `max_chars`.
 
 ## Limits
 
