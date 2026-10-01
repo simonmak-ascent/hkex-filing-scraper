@@ -242,6 +242,14 @@ Ideas and questions are welcome in
 
 If this saves you time, a star helps others find it.
 
+## Use with Context7
+
+Up-to-date HKEx Filing Scraper documentation is indexed on [Context7](https://context7.com/simonplmak-cloud/hkex-filing-scraper), so coding agents can pull it into context on demand. With the Context7 MCP server or `ctx7` CLI installed, name the library in your prompt:
+
+```text
+use library /simonplmak-cloud/hkex-filing-scraper for API and docs
+```
+
 ## License
 
 MIT — see [LICENSE](LICENSE). That covers **this project's code only**; optional dependencies
