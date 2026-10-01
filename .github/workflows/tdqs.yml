@@ -1,0 +1,36 @@
+name: MCP Tool Definition Quality
+
+on:
+  pull_request:
+    paths:
+      - "src/hkex_scraper/mcp_server.py"
+      - "src/hkex_scraper/**"
+  push:
+    branches: [main]
+    paths:
+      - "src/hkex_scraper/mcp_server.py"
+
+permissions:
+  contents: read
+
+jobs:
+  tdqs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+
+      - name: Install library + MCP deps
+        run: pip install -e ".[mcp]"
+
+      # Deterministic stages only (context signals, hard gates, shadow prefilter).
+      # The model-graded `score` runs on Glama's sweep and needs an API key.
+      - name: Lint the MCP tool surface (Glama TDQS)
+        run: npx --yes mcp-tdqs@0.2.0 lint --command "hkex-scraper-mcp" --fail-on error
