@@ -26,6 +26,8 @@ description: Install HKEx Filing Scraper, set DATABASE_TARGET, and run your firs
 See [Database sinks](sinks/README.md) for the support matrix, licenses, and capability
 differences.
 
+See [Database backends](backends/README.md) for the support matrix, licences, and capability differences.
+
 ## Install
 
 ```bash
@@ -102,6 +104,30 @@ SURREAL_USERNAME=root  SURREAL_PASSWORD=your_password
 DATABASE_TARGET=postgres,sqlite
 POSTGRES_DSN=postgresql://user:password@localhost:5432/hkex
 SQLITE_PATH=hkex.db
+```
+
+### Other backends
+
+```ini
+# MySQL / MariaDB
+DATABASE_TARGET=mysql
+MYSQL_HOST=localhost  MYSQL_DATABASE=hkex  MYSQL_USER=hkex  MYSQL_PASSWORD=secret
+
+# DuckDB (no server)
+DATABASE_TARGET=duckdb
+DUCKDB_PATH=hkex.duckdb
+
+# MongoDB
+DATABASE_TARGET=mongodb
+MONGODB_URI=mongodb://localhost:27017  MONGODB_DATABASE=hkex
+
+# ClickHouse
+DATABASE_TARGET=clickhouse
+CLICKHOUSE_HOST=localhost  CLICKHOUSE_DATABASE=hkex  CLICKHOUSE_USER=default
+
+# Neo4j
+DATABASE_TARGET=neo4j
+NEO4J_URI=bolt://localhost:7687  NEO4J_USER=neo4j  NEO4J_PASSWORD=secret
 ```
 
 `DATABASE_TARGET` is required — there is no implicit default. See
