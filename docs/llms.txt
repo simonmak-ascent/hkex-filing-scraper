@@ -51,3 +51,8 @@
 ## Full text
 
 - [Complete documentation in one file](https://hkex-listco-updates.ascent-partners.com/llms-full.txt): every page concatenated for a single-pass read.
+
+## For AI agents
+
+- Context7 library ID: `/simonplmak-cloud/hkex-filing-scraper`
+- Glama listing: https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper

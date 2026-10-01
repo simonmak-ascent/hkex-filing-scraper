@@ -1,0 +1,44 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "HKEx Filing Scraper",
+  "description": "Python pipeline and read-only MCP server for 25+ years of HKEX (Hong Kong Stock Exchange) regulatory filings: full-text extraction into PostgreSQL, MySQL/MariaDB, SQLite, DuckDB, MongoDB, ClickHouse, Neo4j or SurrealDB, plus a hosted live MCP gateway for AI agents.",
+  "folders": [
+    "docs",
+    "examples"
+  ],
+  "rules": [
+    "Install with `pip install hkex-filing-scraper` (add the `[mcp]` extra for the MCP server); the PyPI package name is `hkex-filing-scraper`.",
+    "Select the destination database with the `DATABASE_TARGET` environment variable; see docs/configuration.md for every variable.",
+    "Use the hosted live MCP gateway when no local database is needed; use the local stdio server `hkex-scraper-mcp` to query a corpus you have already scraped.",
+    "All MCP tools are read-only and idempotent; there are no write or delete tools.",
+    "Date flags on the CLI are `--from-date` and `--to-date` in DD/MM/YYYY format."
+  ],
+  "excludeFolders": [
+    "node_modules",
+    "dist",
+    "build",
+    ".next",
+    ".cache",
+    "tests",
+    "tests-webapp",
+    "e2e",
+    "test-results",
+    "**/__pycache__",
+    ".github",
+    ".opencode",
+    ".devcontainer",
+    "specs",
+    "marketing",
+    "overrides"
+  ],
+  "excludeFiles": [
+    "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md",
+    "LICENSE",
+    "LICENSE.md",
+    "LICENSE-CONTENT.md",
+    "SECURITY.md",
+    "GITHUB_SETUP.md",
+    "VERCEL_PROTECTION_FIX.md"
+  ]
+}
