@@ -12,6 +12,8 @@
 [![Glama MCP](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper/badges/score.svg)](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper)
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230.svg)](https://github.com/astral-sh/ruff)
 
+> **An open-source scraper for 25+ years of HKEx regulatory filings** — into any of nine databases, with full-text extraction, graph linking, and a read-only MCP server for AI agents.
+
 **The US has EDGAR full-text search. Japan has EDINET. Hong Kong has a search form that returns
 one page at a time.** There is no bulk, machine-readable, full-text corpus of HKEx filings. This
 builds one.
