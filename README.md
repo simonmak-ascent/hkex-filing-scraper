@@ -254,6 +254,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md); report security issues per [SECURITY.md]
 Ideas and questions are welcome in
 [Discussions](https://github.com/simonplmak-cloud/hkex-filing-scraper/discussions).
 
+Built by [Ascent Partners](https://www.ascent.partners).
+
 If this saves you time, a ⭐ on GitHub helps others find it.
 
 ## Use with Context7
