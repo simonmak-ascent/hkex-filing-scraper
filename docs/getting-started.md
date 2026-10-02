@@ -106,7 +106,7 @@ POSTGRES_DSN=postgresql://user:password@localhost:5432/hkex
 SQLITE_PATH=hkex.db
 ```
 
-### Other backends
+### Other sinks
 
 ```ini
 # MySQL / MariaDB
