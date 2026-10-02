@@ -7,20 +7,10 @@
 [![PyPI](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpypi.org%2Fpypi%2Fhkex-filing-scraper%2Fjson&query=%24.info.version&label=PyPI&color=blue)](https://pypi.org/project/hkex-filing-scraper/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![MCP](https://img.shields.io/badge/MCP-server-blueviolet)](https://hkex-listco-updates.ascent-partners.com/ai-agents/)
-[![mcp-hkex-filing MCP server – quality and maintenance score on Glama](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper/badges/score.svg)](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper)
 [![Docs](https://img.shields.io/badge/docs-hkex--listco--updates.ascent--partners.com-blue)](https://hkex-listco-updates.ascent-partners.com/)
+[![MCP](https://img.shields.io/badge/MCP-server-blueviolet)](https://hkex-listco-updates.ascent-partners.com/ai-agents/)
+[![Glama MCP](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper/badges/score.svg)](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper)
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230.svg)](https://github.com/astral-sh/ruff)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
-[![MySQL](https://img.shields.io/badge/MySQL-4479A1?logo=mysql&logoColor=white)](https://www.mysql.com)
-[![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)](https://sqlite.org)
-[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com)
-[![Neo4j](https://img.shields.io/badge/Neo4j-4581C3?logo=neo4j&logoColor=white)](https://neo4j.com)
-[![ClickHouse](https://img.shields.io/badge/ClickHouse-FFCC01?logo=clickhouse&logoColor=black)](https://clickhouse.com)
-[![DuckDB](https://img.shields.io/badge/DuckDB-FFF000?logo=duckdb&logoColor=black)](https://duckdb.org)
-[![SurrealDB](https://img.shields.io/badge/SurrealDB-FF00A0?logo=surrealdb&logoColor=white)](https://surrealdb.com)
 
 **The US has EDGAR full-text search. Japan has EDINET. Hong Kong has a search form that returns
 one page at a time.** There is no bulk, machine-readable, full-text corpus of HKEx filings. This
@@ -115,8 +105,6 @@ in the [official MCP Registry](https://registry.modelcontextprotocol.io/) as
 > **Featured on Glama** — the read-only [stdio MCP server](docs/mcp.md) is also published on
 > [Glama](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper), where Glama scans the
 > built server and scores tool-definition quality (currently 4.7/5).
->
-> [![mcp-hkex-filing MCP server – quality and maintenance score on Glama](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper/badges/card.svg)](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper)
 
 ## Quick start (local)
 
@@ -264,7 +252,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md); report security issues per [SECURITY.md]
 Ideas and questions are welcome in
 [Discussions](https://github.com/simonplmak-cloud/hkex-filing-scraper/discussions).
 
-If this saves you time, a star helps others find it.
+If this saves you time, a ⭐ on GitHub helps others find it.
 
 ## Use with Context7
 
