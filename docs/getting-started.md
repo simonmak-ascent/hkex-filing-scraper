@@ -26,7 +26,7 @@ description: Install HKEx Filing Scraper, set DATABASE_TARGET, and run your firs
 See [Database sinks](sinks/README.md) for the support matrix, licenses, and capability
 differences.
 
-See [Database backends](backends/README.md) for the support matrix, licences, and capability differences.
+See [Database sinks](sinks/README.md) for the support matrix, licences, and capability differences.
 
 ## Install
 
