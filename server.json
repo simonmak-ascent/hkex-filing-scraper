@@ -19,7 +19,7 @@
     {
       "registryType": "pypi",
       "identifier": "hkex-filing-scraper",
-      "version": "2.4.0",
+      "version": "2.4.1",
       "runtimeHint": "uvx",
       "runtimeArguments": [
         {
