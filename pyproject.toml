@@ -121,9 +121,11 @@ packages = ["src/hkex_scraper"]
 [tool.hatch.version]
 source = "vcs"
 # Only release tags (vX.Y.Z) are version sources. Backup/branch-style tags such as
-# `backup/pre-cleanup-2026-10-01/main` sit at HEAD and would otherwise break the build.
+# `backup/pre-cleanup-2026-10-01/main` sit at HEAD and otherwise break `git describe`.
+# Restrict the describe command to v-tags; fall back when running from a shallow clone.
 tag-pattern = "^v(?P<version>\\d+\\.\\d+.*)$"
 fallback-version = "0.0.0"
+raw-options = { git_describe_command = "git describe --dirty --tags --long --match v[0-9]*" }
 
 [tool.hatch.build.hooks.vcs]
 version-file = "src/hkex_scraper/_version.py"
