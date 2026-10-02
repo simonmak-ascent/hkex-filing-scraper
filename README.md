@@ -28,7 +28,7 @@ full-text and table extraction, chunk-level coverage, optional graph linking, an
 It speaks the undocumented HKEx JSON API directly, which is faster and more resilient than
 driving a browser.
 
-## Vendors & integrations
+## Vendors & Integrations
 
 **Databases** — nine first-class destinations, in documented popularity order (see the
 [support matrix](docs/sinks/README.md)):
@@ -50,7 +50,7 @@ driving a browser.
 [MCP Registry](https://registry.modelcontextprotocol.io/) ·
 [hosted gateway](https://hkex-listco-updates.ascent-partners.com/api/mcp).
 
-## Two ways to use it
+## Two Ways to Use It
 
 | | **Hosted MCP gateway** | **Local pipeline** |
 | --- | --- | --- |
@@ -61,7 +61,7 @@ driving a browser.
 
 ![Example: install, scrape filings into SQLite, then query the hosted MCP gateway from an AI agent](https://raw.githubusercontent.com/simonplmak-cloud/hkex-filing-scraper/main/docs/assets/demo.svg)
 
-## Use the hosted MCP gateway
+## Use the Hosted MCP Gateway
 
 POST, Streamable HTTP, **no API key**:
 
@@ -108,7 +108,7 @@ in the [official MCP Registry](https://registry.modelcontextprotocol.io/) as
 > [Glama](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper), where Glama scans the
 > built server and scores tool-definition quality (currently 4.7/5).
 
-## Quick start (local)
+## Quick Start (Local)
 
 ```bash
 pip install hkex-filing-scraper        # core; SQLite needs no server
@@ -132,7 +132,7 @@ SQLITE_PATH=hkex.db
 --full-history` covers everything since April 1999. The schema is created automatically.
 Full install options and per-sink settings are in [Getting started](docs/getting-started.md).
 
-## Database support
+## Database Support
 
 Every sink is a first-class destination; rows are in documented popularity order. The full
 matrix — licenses, capability differences, per-engine notes — is in
@@ -161,7 +161,7 @@ POSTGRES_DSN=postgresql://user:password@localhost:5432/hkex
 SQLITE_PATH=hkex.db
 ```
 
-## How this compares
+## How This Compares
 
 Four ways to get HKEx filings, and what each one costs you.
 
@@ -181,7 +181,7 @@ If you need licensed, redistributable, SLA-backed data, buy the feed. If you nee
 local corpus for research, compliance, or RAG, this replaces the pipeline you would otherwise
 write yourself.
 
-## How it works
+## How It Works
 
 ```mermaid
 flowchart LR
