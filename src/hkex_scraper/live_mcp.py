@@ -58,6 +58,9 @@ DEFAULT_MAX_RESULTS = 50
 MAX_MAX_RESULTS = 200
 MAX_WINDOW_DAYS = 31
 MAX_TEXT_CHARS = 300_000
+# In-document search: how many matches to return and how much context around each.
+MAX_MATCHES = 20
+SNIPPET_RADIUS = 300
 MAX_TABLES = 30
 MAX_FACET_VALUES = 50
 FETCH_TIMEOUT_SECONDS = 60
@@ -317,9 +320,41 @@ def _tool_list_filing_facets(
     }
 
 
-def _tool_get_filing(link: str, extract: bool = True) -> Dict[str, Any]:
+def _find_matches(text: str, query: str) -> Tuple[List[Dict[str, Any]], int]:
+    """Case-insensitive occurrences of ``query`` with surrounding context."""
+    haystack = text.lower()
+    needle = query.lower()
+    matches: List[Dict[str, Any]] = []
+    total = 0
+    start = haystack.find(needle)
+    while start != -1:
+        total += 1
+        if len(matches) < MAX_MATCHES:
+            lo = max(0, start - SNIPPET_RADIUS)
+            hi = min(len(text), start + len(needle) + SNIPPET_RADIUS)
+            matches.append({"offset": start, "snippet": text[lo:hi]})
+        start = haystack.find(needle, start + len(needle))
+    return matches, total
+
+
+def _tool_get_filing(
+    link: str,
+    extract: bool = True,
+    offset: int = 0,
+    max_chars: int = MAX_TEXT_CHARS,
+    query: str = "",
+) -> Dict[str, Any]:
     if not is_allowed_document_url(link):
         raise McpError("link must be an HKEx document URL under www1.hkexnews.hk")
+    if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
+        raise McpError("offset must be a non-negative integer")
+    if (
+        not isinstance(max_chars, int)
+        or isinstance(max_chars, bool)
+        or not 1 <= max_chars <= MAX_TEXT_CHARS
+    ):
+        raise McpError(f"max_chars must be an integer between 1 and {MAX_TEXT_CHARS}")
+    query = (query or "").strip()
 
     session = http.make_session()
     try:
@@ -339,14 +374,34 @@ def _tool_get_filing(link: str, extract: bool = True) -> Dict[str, Any]:
 
     from .extractor import extract_content_with_tables
 
-    text, tables = extract_content_with_tables(raw, link)
-    text, truncated = _truncate_text(text, MAX_TEXT_CHARS)
+    full_text, tables = extract_content_with_tables(raw, link)
+    total_length = len(full_text)
     tables, omitted = _cap_tables(list(tables), MAX_TABLES)
+
+    if query:
+        matches, match_count = _find_matches(full_text, query)
+        result.update(
+            {
+                "query": query,
+                "match_count": match_count,
+                "matches": matches,
+                "total_text_length": total_length,
+                "tables": tables,
+                "tables_omitted": omitted,
+            }
+        )
+        return result
+
+    window = full_text[offset : offset + max_chars]
+    end = offset + len(window)
     result.update(
         {
-            "document_text": text,
-            "text_length": len(text),
-            "text_truncated": truncated,
+            "document_text": window,
+            "text_length": len(window),
+            "total_text_length": total_length,
+            "offset": offset,
+            "next_offset": end if end < total_length else None,
+            "text_truncated": end < total_length,
             "tables": tables,
             "tables_omitted": omitted,
         }
@@ -444,14 +499,25 @@ def list_filing_facets(
 
 
 @_as_tool
-def get_filing(link: str, extract: bool = True) -> Dict[str, Any]:
-    """Download one HKEx document by its URL and extract its text and tables.
+def get_filing(
+    link: str,
+    extract: bool = True,
+    offset: int = 0,
+    max_chars: int = MAX_TEXT_CHARS,
+    query: str = "",
+) -> Dict[str, Any]:
+    """Download one HKEx document by its URL and read, page through, or search its text.
 
-    ``link`` must be an HKEx document URL (host ``www1.hkexnews.hk``); any other host is
-    rejected. With ``extract=True`` the response includes extracted ``document_text``
-    (truncated) and up to 30 ``tables``; set ``extract=False`` for size/content-type only.
+    ``link`` must be an HKEx document URL from search_filings (host ``www1.hkexnews.hk``);
+    any other host is rejected. With ``extract=True`` (default) the response includes up to
+    30 ``tables`` and a window of extracted ``document_text``: ``max_chars`` characters
+    starting at ``offset``. Long reports return ``next_offset``; call again with it to read
+    the next window. Pass ``query`` to search the whole document instead: the response then
+    lists up to 20 case-insensitive matches with their offsets and surrounding text, plus
+    ``match_count`` — use a match offset to read that part. Set ``extract=False`` for size
+    and content type only.
     """
-    return _tool_get_filing(link, extract)
+    return _tool_get_filing(link, extract, offset, max_chars, query)
 
 
 TOOLS: List[Callable[..., Any]] = [
@@ -511,6 +577,7 @@ def _structured_output(fields: Dict[str, Any]) -> Dict[str, Any]:
 TOOL_SCHEMAS: List[Dict[str, Any]] = [
     {
         "name": "get_server_info",
+        "title": "Gateway Info",
         "description": get_server_info.__doc__ or "",
         "annotations": dict(_TOOL_ANNOTATIONS),
         "inputSchema": {
@@ -540,6 +607,7 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
     },
     {
         "name": "search_filings",
+        "title": "Search HKEx Filings",
         "description": search_filings.__doc__ or "",
         "annotations": dict(_TOOL_ANNOTATIONS),
         "inputSchema": {
@@ -602,6 +670,7 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
     },
     {
         "name": "list_filing_facets",
+        "title": "Browse Filing Facets",
         "description": list_filing_facets.__doc__ or "",
         "annotations": dict(_TOOL_ANNOTATIONS),
         "inputSchema": {
@@ -646,13 +715,38 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
     },
     {
         "name": "get_filing",
+        "title": "Read HKEx Filing",
         "description": get_filing.__doc__ or "",
         "annotations": dict(_TOOL_ANNOTATIONS),
         "inputSchema": {
             "type": "object",
             "properties": {
-                "link": {"type": "string", "description": "HKEx document URL"},
-                "extract": {"type": "boolean", "description": "Extract text and tables"},
+                "link": {
+                    "type": "string",
+                    "description": "HKEx document URL from a search_filings result (host www1.hkexnews.hk)",
+                },
+                "extract": {
+                    "type": "boolean",
+                    "default": True,
+                    "description": "Extract text and tables; false returns size and content type only",
+                },
+                "offset": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0,
+                    "description": "Character offset where the returned text window starts (use next_offset to page)",
+                },
+                "max_chars": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": MAX_TEXT_CHARS,
+                    "default": MAX_TEXT_CHARS,
+                    "description": "Maximum characters of document_text to return in this window",
+                },
+                "query": {
+                    "type": "string",
+                    "description": "Optional text to find in the whole document; returns matches with offsets instead of a text window",
+                },
             },
             "required": ["link"],
             "additionalProperties": False,
@@ -666,8 +760,33 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
                     "size_bytes": {"type": "integer"},
                     "content_type": {"type": "string"},
                     "document_text": {"type": "string", "description": "Extracted Markdown text"},
-                    "text_length": {"type": "integer"},
-                    "text_truncated": {"type": "boolean"},
+                    "text_length": {"type": "integer", "description": "Characters in this window"},
+                    "total_text_length": {
+                        "type": "integer",
+                        "description": "Characters in the whole extracted document",
+                    },
+                    "offset": {"type": "integer"},
+                    "next_offset": {
+                        "type": ["integer", "null"],
+                        "description": "Offset of the next window, or null at the end",
+                    },
+                    "text_truncated": {
+                        "type": "boolean",
+                        "description": "True when more text follows this window",
+                    },
+                    "query": {"type": "string"},
+                    "match_count": {"type": "integer", "description": "Total matches for query"},
+                    "matches": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "offset": {"type": "integer"},
+                                "snippet": {"type": "string"},
+                            },
+                            "required": ["offset", "snippet"],
+                        },
+                    },
                     "tables": {"type": "array", "items": {"type": "object"}},
                     "tables_omitted": {"type": "integer"},
                 },
@@ -821,9 +940,7 @@ def build_server() -> Any:
         raise RuntimeError(
             'MCP support is not installed; install with: pip install "hkex-filing-scraper[mcp]"'
         )
-    annotations = ToolAnnotations(  # type: ignore[misc]
-        readOnlyHint=True, destructiveHint=False, openWorldHint=True
-    )
+    titles = {schema["name"]: schema["title"] for schema in TOOL_SCHEMAS}
     server = FastMCP(  # type: ignore[misc]
         SERVER_NAME,
         instructions=INSTRUCTIONS,
@@ -832,7 +949,10 @@ def build_server() -> Any:
         streamable_http_path=STREAMABLE_HTTP_PATH,
     )
     for tool in TOOLS:
-        server.add_tool(tool, annotations=annotations)
+        annotations = ToolAnnotations(  # type: ignore[misc]
+            title=titles[tool.__name__], **_TOOL_ANNOTATIONS
+        )
+        server.add_tool(tool, title=titles[tool.__name__], annotations=annotations)
     return server
 
 
