@@ -22,6 +22,10 @@
 [![DuckDB](https://img.shields.io/badge/DuckDB-FFF000?logo=duckdb&logoColor=black)](https://duckdb.org)
 [![SurrealDB](https://img.shields.io/badge/SurrealDB-FF00A0?logo=surrealdb&logoColor=white)](https://surrealdb.com)
 
+**The US has EDGAR full-text search. Japan has EDINET. Hong Kong has a search form that returns
+one page at a time.** There is no bulk, machine-readable, full-text corpus of HKEx filings. This
+builds one.
+
 An open-source Python tool that scrapes 25+ years of Hong Kong Stock Exchange (HKEx)
 regulatory filings and ingests them into **any combination of nine databases** — with
 full-text and table extraction, chunk-level coverage, optional graph linking, and a
@@ -166,6 +170,26 @@ DATABASE_TARGET=postgres,sqlite
 POSTGRES_DSN=postgresql://user:password@localhost:5432/hkex
 SQLITE_PATH=hkex.db
 ```
+
+## How this compares
+
+Four ways to get HKEx filings, and what each one costs you.
+
+| | This project | HKEXnews web search | Browser automation you write | Licensed HKEx feed |
+| --- | --- | --- | --- | --- |
+| Bulk export | Yes | No — page-at-a-time | Yes | Yes |
+| History to April 1999 | Yes | Yes, manually | Depends on your code | Yes |
+| Full text of documents | Extracted from PDF/HTML/Excel | No — you open each file | You build the extractor | Varies by contract |
+| Structured tables | Extracted to Markdown | No | You build it | Varies |
+| Coverage verification | Per-chunk, auditable | Not applicable | You build it | Vendor SLA |
+| Lands in your engine | 9 engines, any combination | No | Whatever you wire up | Usually one format |
+| Speed | JSON API, no browser | Manual | Slower — renders pages | Fast |
+| Cost | Free, MIT | Free | Your time | Subscription |
+| Commercial redistribution | See [docs/legal.md](docs/legal.md) | Restricted | Restricted | Licensed |
+
+If you need licensed, redistributable, SLA-backed data, buy the feed. If you need a complete
+local corpus for research, compliance, or RAG, this replaces the pipeline you would otherwise
+write yourself.
 
 ## How it works
 
