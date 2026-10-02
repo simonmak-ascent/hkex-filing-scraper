@@ -120,6 +120,10 @@ packages = ["src/hkex_scraper"]
 
 [tool.hatch.version]
 source = "vcs"
+# Only release tags (vX.Y.Z) are version sources. Backup/branch-style tags such as
+# `backup/pre-cleanup-2026-10-01/main` sit at HEAD and would otherwise break the build.
+tag-pattern = "^v(?P<version>\\d+\\.\\d+.*)$"
+fallback-version = "0.0.0"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "src/hkex_scraper/_version.py"
