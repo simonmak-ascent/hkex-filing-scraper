@@ -243,7 +243,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--docs-dir", default="docs")
     parser.add_argument("--out", default="build/wiki")
-    parser.add_argument("--repo", default="simonplmak-cloud/hkex-filing-scraper")
+    parser.add_argument("--repo", default="simonmak-ascent/hkex-filing-scraper")
     parser.add_argument("--branch", default="main")
     parser.add_argument(
         "--check",

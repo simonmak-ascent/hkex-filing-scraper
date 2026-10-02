@@ -109,11 +109,11 @@ hkex-scraper = "hkex_scraper.main:main"
 hkex-scraper-mcp = "hkex_scraper.mcp_server:main"
 
 [project.urls]
-Homepage = "https://github.com/simonplmak-cloud/hkex-filing-scraper"
+Homepage = "https://github.com/simonmak-ascent/hkex-filing-scraper"
 Documentation = "https://hkex-listco-updates.ascent-partners.com/"
-Repository = "https://github.com/simonplmak-cloud/hkex-filing-scraper"
-Issues = "https://github.com/simonplmak-cloud/hkex-filing-scraper/issues"
-Changelog = "https://github.com/simonplmak-cloud/hkex-filing-scraper/blob/main/CHANGELOG.md"
+Repository = "https://github.com/simonmak-ascent/hkex-filing-scraper"
+Issues = "https://github.com/simonmak-ascent/hkex-filing-scraper/issues"
+Changelog = "https://github.com/simonmak-ascent/hkex-filing-scraper/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/hkex_scraper"]

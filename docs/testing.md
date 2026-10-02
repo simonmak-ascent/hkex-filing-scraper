@@ -146,5 +146,5 @@ is pinned to `v3.2.4`.
 
 ## See also
 
-- [Contributing](https://github.com/simonplmak-cloud/hkex-filing-scraper/blob/main/CONTRIBUTING.md)
+- [Contributing](https://github.com/simonmak-ascent/hkex-filing-scraper/blob/main/CONTRIBUTING.md)
 - [De-risking register](de-risking.md)

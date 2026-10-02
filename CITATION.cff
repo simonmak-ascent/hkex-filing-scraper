@@ -8,8 +8,8 @@ abstract: >-
   extraction and optional graph linking.
 type: software
 license: MIT
-license-url: "https://github.com/simonplmak-cloud/hkex-filing-scraper/blob/main/LICENSE"
-repository-code: "https://github.com/simonplmak-cloud/hkex-filing-scraper"
+license-url: "https://github.com/simonmak-ascent/hkex-filing-scraper/blob/main/LICENSE"
+repository-code: "https://github.com/simonmak-ascent/hkex-filing-scraper"
 url: "https://hkex-listco-updates.ascent-partners.com/"
 keywords:
   - hkex

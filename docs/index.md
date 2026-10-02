@@ -14,7 +14,7 @@ agents can query HKEx live.
 [Try the hosted endpoint](live-mcp.md){ .md-button .md-button--primary }
 [Getting started](getting-started.md){ .md-button }
 [AI agent support](ai-agents.md){ .md-button }
-[GitHub](https://github.com/simonplmak-cloud/hkex-filing-scraper){ .md-button }
+[GitHub](https://github.com/simonmak-ascent/hkex-filing-scraper){ .md-button }
 
 ## Start here
 
@@ -26,13 +26,13 @@ agents can query HKEx live.
 - [MCP server](mcp.md)
 - [Live MCP gateway](live-mcp.md) — the hosted, no-install endpoint, with search filters and facet browsing
 - [AI agent support](ai-agents.md)
-- [Try it locally (`examples/`)](https://github.com/simonplmak-cloud/hkex-filing-scraper/tree/main/examples)
+- [Try it locally (`examples/`)](https://github.com/simonmak-ascent/hkex-filing-scraper/tree/main/examples)
 
 ## Vendors & integrations
 
 - **Databases** — nine first-class destinations; see the [support matrix](sinks/README.md).
 - **AI clients** — ready-made configuration for [Claude, ChatGPT, Cursor, VS Code/Copilot, Gemini, opencode, Manus, and Perplexity](ai-agents.md).
-- **Available on** — [PyPI](https://pypi.org/project/hkex-filing-scraper/) · [Glama](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper) · [MCP Registry](https://registry.modelcontextprotocol.io/).
+- **Available on** — [PyPI](https://pypi.org/project/hkex-filing-scraper/) · [Glama](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper) · [MCP Registry](https://registry.modelcontextprotocol.io/).
 
 ## Per-sink guides
 
@@ -72,6 +72,6 @@ Every sink is a first-class destination. Rows are in the documented popularity o
 ## Project
 
 - [Documentation style guide](STYLE.md)
-- [README](https://github.com/simonplmak-cloud/hkex-filing-scraper#readme)
-- [Contributing](https://github.com/simonplmak-cloud/hkex-filing-scraper/blob/main/CONTRIBUTING.md)
-- [Changelog](https://github.com/simonplmak-cloud/hkex-filing-scraper/blob/main/CHANGELOG.md)
+- [README](https://github.com/simonmak-ascent/hkex-filing-scraper#readme)
+- [Contributing](https://github.com/simonmak-ascent/hkex-filing-scraper/blob/main/CONTRIBUTING.md)
+- [Changelog](https://github.com/simonmak-ascent/hkex-filing-scraper/blob/main/CHANGELOG.md)

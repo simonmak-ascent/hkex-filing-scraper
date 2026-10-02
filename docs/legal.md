@@ -32,7 +32,7 @@ by, or sponsored by Hong Kong Exchanges and Clearing Limited (HKEX).
 
 ## License of this software
 
-MIT — see [LICENSE](https://github.com/simonplmak-cloud/hkex-filing-scraper/blob/main/LICENSE). The MIT license covers **this code only**, not any HKEx data
+MIT — see [LICENSE](https://github.com/simonmak-ascent/hkex-filing-scraper/blob/main/LICENSE). The MIT license covers **this code only**, not any HKEx data
 you collect with it.
 
 ## Third-party licenses

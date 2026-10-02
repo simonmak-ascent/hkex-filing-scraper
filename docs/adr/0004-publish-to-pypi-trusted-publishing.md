@@ -40,7 +40,7 @@ not a distribution channel for this project.
 
 - Releases are published to PyPI and GitHub Releases from the same tag, with no upload
   token in either path.
-- The PyPI trusted publisher (owner `simonplmak-cloud`, repo `hkex-filing-scraper`,
+- The PyPI trusted publisher (owner `simonmak-ascent`, repo `hkex-filing-scraper`,
   workflow `pypi.yml`) must be kept in sync if the repository is renamed or transferred.
 - `pypi.yml` uses `skip-existing`, so re-dispatching a tag is idempotent.
 - The distribution story is documented in `docs/releasing.md` and

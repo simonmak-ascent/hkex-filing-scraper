@@ -54,5 +54,5 @@
 
 ## For AI agents
 
-- Context7 library ID: `/simonplmak-cloud/hkex-filing-scraper`
-- Glama listing: https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper
+- Context7 library ID: `/simonmak-ascent/hkex-filing-scraper`
+- Glama listing: https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper

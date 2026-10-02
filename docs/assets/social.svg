@@ -42,7 +42,7 @@
   <text class="mono cmd" x="96" y="445">$ pip install hkex-filing-scraper</text>
   <text class="mono cmdc" x="470" y="445">then point your agent at the endpoint</text>
 
-  <text class="mono footer" x="72" y="524">github.com/simonplmak-cloud/hkex-filing-scraper</text>
+  <text class="mono footer" x="72" y="524">github.com/simonmak-ascent/hkex-filing-scraper</text>
   <text class="mono footer" x="1208" y="524" text-anchor="end">MIT License</text>
   <text class="mono footer" x="72" y="556" fill="#7ee787">search_filings · get_filing · get_server_info</text>
   <text class="mono footer" x="1208" y="556" text-anchor="end">read-only · nothing stored</text>

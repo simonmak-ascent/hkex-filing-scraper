@@ -11,7 +11,7 @@ design, and releases.
 
 | Role | Who | Responsibilities |
 | ---- | --- | ---------------- |
-| Maintainer | [@simonplmak-cloud](https://github.com/simonplmak-cloud) | Roadmap, architecture decisions, review, releases, security reports, repository administration. |
+| Maintainer | [@simonmak-ascent](https://github.com/simonmak-ascent) | Roadmap, architecture decisions, review, releases, security reports, repository administration. |
 | Contributor | anyone | Issues, discussions, pull requests, docs, and sink adapters. |
 
 As the contributor base grows, additional maintainers may be invited based on a sustained

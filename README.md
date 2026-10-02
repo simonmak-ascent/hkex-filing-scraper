@@ -1,15 +1,15 @@
 # HKEx Filing Scraper
 
-![HKEx Filing Scraper — one scraper, many databases](https://raw.githubusercontent.com/simonplmak-cloud/hkex-filing-scraper/main/docs/social_preview.png)
+![HKEx Filing Scraper — one scraper, many databases](https://raw.githubusercontent.com/simonmak-ascent/hkex-filing-scraper/main/docs/social_preview.png)
 
-[![CI](https://github.com/simonplmak-cloud/hkex-filing-scraper/actions/workflows/ci.yml/badge.svg)](https://github.com/simonplmak-cloud/hkex-filing-scraper/actions/workflows/ci.yml)
-[![GitHub Release](https://img.shields.io/github/v/release/simonplmak-cloud/hkex-filing-scraper?color=green)](https://github.com/simonplmak-cloud/hkex-filing-scraper/releases)
+[![CI](https://github.com/simonmak-ascent/hkex-filing-scraper/actions/workflows/ci.yml/badge.svg)](https://github.com/simonmak-ascent/hkex-filing-scraper/actions/workflows/ci.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/simonmak-ascent/hkex-filing-scraper?color=green)](https://github.com/simonmak-ascent/hkex-filing-scraper/releases)
 [![PyPI](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpypi.org%2Fpypi%2Fhkex-filing-scraper%2Fjson&query=%24.info.version&label=PyPI&color=blue)](https://pypi.org/project/hkex-filing-scraper/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Docs](https://img.shields.io/badge/docs-hkex--listco--updates.ascent--partners.com-blue)](https://hkex-listco-updates.ascent-partners.com/)
 [![MCP](https://img.shields.io/badge/MCP-server-blueviolet)](https://hkex-listco-updates.ascent-partners.com/ai-agents/)
-[![Glama MCP](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper/badges/score.svg)](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper)
+[![Glama MCP](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper/badges/score.svg)](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper)
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230.svg)](https://github.com/astral-sh/ruff)
 
 > **An open-source scraper for 25+ years of HKEx regulatory filings** — into any of nine databases, with full-text extraction, graph linking, and a read-only MCP server for AI agents.
@@ -23,7 +23,7 @@ regulatory filings and ingests them into **any combination of nine databases** �
 full-text and table extraction, chunk-level coverage, optional graph linking, and a
 **read-only MCP server** so AI agents can query the corpus or the live site.
 
-<!-- mcp-name: io.github.simonplmak-cloud/hkex-filings -->
+<!-- mcp-name: io.github.simonmak-ascent/hkex-filings -->
 
 It speaks the undocumented HKEx JSON API directly, which is faster and more resilient than
 driving a browser.
@@ -46,7 +46,7 @@ driving a browser.
 [Claude, ChatGPT, Cursor, VS Code/Copilot, Gemini CLI, opencode, Manus, and Perplexity](docs/ai-agents.md).
 
 **Available on** — [PyPI](https://pypi.org/project/hkex-filing-scraper/) ·
-[Glama](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper) ·
+[Glama](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper) ·
 [MCP Registry](https://registry.modelcontextprotocol.io/) ·
 [hosted gateway](https://hkex-listco-updates.ascent-partners.com/api/mcp).
 
@@ -59,7 +59,7 @@ driving a browser.
 | Data | Live from HKEx, nothing stored | Stored in your database(s) |
 | Docs | [Live MCP gateway](docs/live-mcp.md) · [AI agent support](docs/ai-agents.md) | [Getting started](docs/getting-started.md) |
 
-![Example: install, scrape filings into SQLite, then query the hosted MCP gateway from an AI agent](https://raw.githubusercontent.com/simonplmak-cloud/hkex-filing-scraper/main/docs/assets/demo.svg)
+![Example: install, scrape filings into SQLite, then query the hosted MCP gateway from an AI agent](https://raw.githubusercontent.com/simonmak-ascent/hkex-filing-scraper/main/docs/assets/demo.svg)
 
 ## Use the Hosted MCP Gateway
 
@@ -74,7 +74,7 @@ optional stock-code, title, document-type, category, and stock-name filters),
 `list_filing_facets` (browse what a window contains), and `get_filing` (downloads one
 document and extracts its text and tables).
 
-![Two ways to reach HKEx filings from an AI agent: the hosted MCP gateway or the local stdio server](https://raw.githubusercontent.com/simonplmak-cloud/hkex-filing-scraper/main/docs/assets/mcp.png)
+![Two ways to reach HKEx filings from an AI agent: the hosted MCP gateway or the local stdio server](https://raw.githubusercontent.com/simonmak-ascent/hkex-filing-scraper/main/docs/assets/mcp.png)
 
 Point a client at it — for example opencode:
 
@@ -100,12 +100,12 @@ then summarise the interim report.
 Ready-made configuration for Claude, ChatGPT, Cursor, VS Code/Copilot, Gemini CLI, opencode,
 Manus, and Perplexity is in [AI agent support](docs/ai-agents.md) — and for a stored corpus,
 the [stdio MCP server](docs/mcp.md) exposes a wider tool catalog and is published on
-[Glama](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper). The gateway is listed
+[Glama](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper). The gateway is listed
 in the [official MCP Registry](https://registry.modelcontextprotocol.io/) as
-`io.github.simonplmak-cloud/hkex-filings`.
+`io.github.simonmak-ascent/hkex-filings`.
 
 > **Featured on Glama** — the read-only [stdio MCP server](docs/mcp.md) is also published on
-> [Glama](https://glama.ai/mcp/servers/simonplmak-cloud/hkex-filing-scraper), where Glama scans the
+> [Glama](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper), where Glama scans the
 > built server and scores tool-definition quality (currently 4.7/5).
 
 ## Quick Start (Local)
@@ -252,7 +252,7 @@ tests that need a server are skipped unless that sink is configured. See
 
 See [CONTRIBUTING.md](CONTRIBUTING.md); report security issues per [SECURITY.md](SECURITY.md).
 Ideas and questions are welcome in
-[Discussions](https://github.com/simonplmak-cloud/hkex-filing-scraper/discussions).
+[Discussions](https://github.com/simonmak-ascent/hkex-filing-scraper/discussions).
 
 Built by [Ascent Partners](https://www.ascent.partners).
 
@@ -260,10 +260,10 @@ If this saves you time, a ⭐ on GitHub helps others find it.
 
 ## Use with Context7
 
-Up-to-date HKEx Filing Scraper documentation is indexed on [Context7](https://context7.com/simonplmak-cloud/hkex-filing-scraper), so coding agents can pull it into context on demand. With the Context7 MCP server or `ctx7` CLI installed, name the library in your prompt:
+Up-to-date HKEx Filing Scraper documentation is indexed on [Context7](https://context7.com/simonmak-ascent/hkex-filing-scraper), so coding agents can pull it into context on demand. With the Context7 MCP server or `ctx7` CLI installed, name the library in your prompt:
 
 ```text
-use library /simonplmak-cloud/hkex-filing-scraper for API and docs
+use library /simonmak-ascent/hkex-filing-scraper for API and docs
 ```
 
 ## License

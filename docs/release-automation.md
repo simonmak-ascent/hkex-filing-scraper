@@ -99,7 +99,7 @@ That is expected and fine — only tagged builds are released.
 4. Spot-check a download:
 
    ```bash
-   pip install "git+https://github.com/simonplmak-cloud/hkex-filing-scraper@v1.2.0"
+   pip install "git+https://github.com/simonmak-ascent/hkex-filing-scraper@v1.2.0"
    hkex-scraper --version
    ```
 

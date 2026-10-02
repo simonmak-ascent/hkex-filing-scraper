@@ -1,8 +1,8 @@
 # Default owner for everything in the repo.
-* @simonplmak-cloud
+* @simonmak-ascent
 
 # Sink architecture and per-engine adapters.
-/src/hkex_scraper/sinks/ @simonplmak-cloud
+/src/hkex_scraper/sinks/ @simonmak-ascent
 
 # CI, release, and GitHub configuration.
-/.github/ @simonplmak-cloud
+/.github/ @simonmak-ascent

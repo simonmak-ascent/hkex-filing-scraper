@@ -24,7 +24,7 @@ SQLITE_PATH=hkex.db
 ## Support matrix
 
 Rows are in the documented popularity order (see
-[`sinks/registry.py`](https://github.com/simonplmak-cloud/hkex-filing-scraper/blob/main/src/hkex_scraper/sinks/registry.py)). Every sink is a first-class
+[`sinks/registry.py`](https://github.com/simonmak-ascent/hkex-filing-scraper/blob/main/src/hkex_scraper/sinks/registry.py)). Every sink is a first-class
 destination; none is privileged.
 
 | Sink | Model | License | OSI | Extra | Idempotent upsert | Reads | Edges |

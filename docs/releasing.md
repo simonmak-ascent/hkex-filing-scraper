@@ -58,7 +58,7 @@ pip install hkex-filing-scraper
 Or pin a specific release, or install straight from the Git tag:
 
 ```bash
-pip install "git+https://github.com/simonplmak-cloud/hkex-filing-scraper@v1.2.0"
+pip install "git+https://github.com/simonmak-ascent/hkex-filing-scraper@v1.2.0"
 ```
 
 You can also download the `.whl` from the Releases page and install that.
@@ -92,11 +92,11 @@ CycloneDX SBOM. Consumers can check both:
 ```bash
 # Build provenance: was this wheel built by this repository's release workflow?
 gh attestation verify hkex_filing_scraper-2.0.0-py3-none-any.whl \
-  --repo simonplmak-cloud/hkex-filing-scraper
+  --repo simonmak-ascent/hkex-filing-scraper
 
 # The SBOM that ships alongside it
 gh attestation verify hkex_filing_scraper-2.0.0-py3-none-any.whl \
-  --repo simonplmak-cloud/hkex-filing-scraper \
+  --repo simonmak-ascent/hkex-filing-scraper \
   --predicate-type https://cyclonedx.org/bom
 ```
 
@@ -114,7 +114,7 @@ people may already be pinned to it. Instead:
 1. **Consumers roll back by pin:** install the previous good tag or release wheel.
 
    ```bash
-   pip install "git+https://github.com/simonplmak-cloud/hkex-filing-scraper@v1.1.0"
+   pip install "git+https://github.com/simonmak-ascent/hkex-filing-scraper@v1.1.0"
    # or download the .whl from the previous Release
    ```
 

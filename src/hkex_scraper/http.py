@@ -34,7 +34,7 @@ from . import __version__
 # requests is a base dependency; the flag is kept for callers that guard on it.
 REQUESTS_AVAILABLE = find_spec("requests") is not None
 
-REPO_URL = "https://github.com/simonplmak-cloud/hkex-filing-scraper"
+REPO_URL = "https://github.com/simonmak-ascent/hkex-filing-scraper"
 
 # Retry policy
 RETRY_TOTAL = 4

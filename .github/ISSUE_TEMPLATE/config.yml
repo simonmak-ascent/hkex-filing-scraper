@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: Question or usage help
-    url: https://github.com/simonplmak-cloud/hkex-filing-scraper/discussions
+    url: https://github.com/simonmak-ascent/hkex-filing-scraper/discussions
     about: Ask a question, share a setup, or discuss an idea in Discussions. Please do not open an issue for usage questions.
   - name: Documentation
     url: https://hkex-listco-updates.ascent-partners.com/
     about: Getting started, configuration, CLI, sink guides, and troubleshooting.
   - name: Security vulnerability
-    url: https://github.com/simonplmak-cloud/hkex-filing-scraper/security/policy
+    url: https://github.com/simonmak-ascent/hkex-filing-scraper/security/policy
     about: Report a vulnerability privately per the security policy. Never open a public issue for security.

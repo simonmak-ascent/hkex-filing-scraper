@@ -17,9 +17,9 @@ Most questions are answered in the docs:
 
 | I want to… | Use |
 | ---------- | --- |
-| Ask a usage question, share a setup, or discuss ideas | [Discussions](https://github.com/simonplmak-cloud/hkex-filing-scraper/discussions) |
-| Report a reproducible bug | [Bug report](https://github.com/simonplmak-cloud/hkex-filing-scraper/issues/new?template=bug_report.yml) |
-| Request a feature or a new sink | [Feature request](https://github.com/simonplmak-cloud/hkex-filing-scraper/issues/new?template=feature_request.yml) |
+| Ask a usage question, share a setup, or discuss ideas | [Discussions](https://github.com/simonmak-ascent/hkex-filing-scraper/discussions) |
+| Report a reproducible bug | [Bug report](https://github.com/simonmak-ascent/hkex-filing-scraper/issues/new?template=bug_report.yml) |
+| Request a feature or a new sink | [Feature request](https://github.com/simonmak-ascent/hkex-filing-scraper/issues/new?template=feature_request.yml) |
 | Report a security vulnerability | [SECURITY.md](SECURITY.md) — **never** a public issue |
 | Contribute code or docs | [CONTRIBUTING.md](CONTRIBUTING.md) |
 

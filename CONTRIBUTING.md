@@ -8,12 +8,12 @@ Thanks for taking the time to contribute. This project follows a [Code of Conduc
 - **Request a feature** — open an issue with the [feature request template](.github/ISSUE_TEMPLATE/feature_request.yml).
 - **Add a sink** — adapters are small; start with [Adding a sink](docs/sinks/README.md#adding-a-sink) and [ADR 0003](docs/adr/0003-sink-support-policy.md).
 - **Improve the docs** — see [docs/STYLE.md](docs/STYLE.md) for the house style.
-- **Ask a question** — use [Discussions](https://github.com/simonplmak-cloud/hkex-filing-scraper/discussions), or see [SUPPORT.md](SUPPORT.md).
+- **Ask a question** — use [Discussions](https://github.com/simonmak-ascent/hkex-filing-scraper/discussions), or see [SUPPORT.md](SUPPORT.md).
 
 ## Development setup
 
 ```bash
-git clone https://github.com/simonplmak-cloud/hkex-filing-scraper.git
+git clone https://github.com/simonmak-ascent/hkex-filing-scraper.git
 cd hkex-filing-scraper
 pip install -e ".[dev,all]"
 ```
@@ -121,4 +121,4 @@ git push origin v2.0.1
 
 ## Questions
 
-Open an issue, or start a [Discussion](https://github.com/simonplmak-cloud/hkex-filing-scraper/discussions). For security issues, follow [SECURITY.md](SECURITY.md) instead of opening a public issue.
+Open an issue, or start a [Discussion](https://github.com/simonmak-ascent/hkex-filing-scraper/discussions). For security issues, follow [SECURITY.md](SECURITY.md) instead of opening a public issue.

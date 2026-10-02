@@ -45,7 +45,7 @@ pip install "hkex-filing-scraper[duckdb]"    # or: mysql, mongodb, clickhouse, n
 To run the latest unreleased code:
 
 ```bash
-pip install "git+https://github.com/simonplmak-cloud/hkex-filing-scraper.git"
+pip install "git+https://github.com/simonmak-ascent/hkex-filing-scraper.git"
 ```
 
 > The `pdf` extra installs **AGPL-3.0** libraries (PyMuPDF, pymupdf4llm). It is **not** part

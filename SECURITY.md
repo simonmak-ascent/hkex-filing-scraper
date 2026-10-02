@@ -19,7 +19,7 @@ subject line, and include:
 - minimal reproduction steps or a proof of concept,
 - any suggested remediation.
 
-If you prefer, use GitHub's [private vulnerability reporting](https://github.com/simonplmak-cloud/hkex-filing-scraper/security/advisories/new).
+If you prefer, use GitHub's [private vulnerability reporting](https://github.com/simonmak-ascent/hkex-filing-scraper/security/advisories/new).
 
 ## What to expect
 

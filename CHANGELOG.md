@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the live gateway from Claude Code, Claude Desktop, ChatGPT, Cursor, VS Code (GitHub
   Copilot), Gemini CLI, opencode, Manus, Perplexity, any MCP SDK client, and stdio-only
   clients via `mcp-remote`.
-- **Published to the official MCP Registry** as `io.github.simonplmak-cloud/hkex-filings`;
+- **Published to the official MCP Registry** as `io.github.simonmak-ascent/hkex-filings`;
   `server.json` declares both the hosted remote endpoint and the PyPI package.
 
 ### Changed
@@ -275,6 +275,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Non-breaking: the default sink and all existing CLI flags are unchanged. Multi-sink is forward-only — existing SurrealDB data is not migrated to PostgreSQL automatically.
 
-[Unreleased]: https://github.com/simonplmak-cloud/hkex-filing-scraper/compare/v2.0.0...HEAD
-[2.0.0]: https://github.com/simonplmak-cloud/hkex-filing-scraper/releases/tag/v2.0.0
-[1.1.0]: https://github.com/simonplmak-cloud/hkex-filing-scraper/releases/tag/v1.1.0
+[Unreleased]: https://github.com/simonmak-ascent/hkex-filing-scraper/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/simonmak-ascent/hkex-filing-scraper/releases/tag/v2.0.0
+[1.1.0]: https://github.com/simonmak-ascent/hkex-filing-scraper/releases/tag/v1.1.0

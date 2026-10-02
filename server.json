@@ -1,12 +1,12 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.simonplmak-cloud/hkex-filings",
+  "name": "io.github.simonmak-ascent/hkex-filings",
   "title": "HKEx Filings",
   "description": "Live HKEx (Hong Kong Stock Exchange) regulatory filings for AI agents.",
   "version": "2.4.1",
   "websiteUrl": "https://hkex-listco-updates.ascent-partners.com/",
   "repository": {
-    "url": "https://github.com/simonplmak-cloud/hkex-filing-scraper",
+    "url": "https://github.com/simonmak-ascent/hkex-filing-scraper",
     "source": "github"
   },
   "remotes": [
@@ -41,7 +41,7 @@
   ],
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/simonplmak-cloud/hkex-filing-scraper/main/docs/social_preview.png",
+      "src": "https://raw.githubusercontent.com/simonmak-ascent/hkex-filing-scraper/main/docs/social_preview.png",
       "mimeType": "image/png"
     }
   ]

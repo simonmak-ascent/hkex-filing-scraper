@@ -6,11 +6,11 @@ Internal marketing notes. Not part of the docs site (kept out of `docs/` on purp
 
 ## Canonical links
 
-- Release: <https://github.com/simonplmak-cloud/hkex-filing-scraper/releases/tag/v2.4.0>
+- Release: <https://github.com/simonmak-ascent/hkex-filing-scraper/releases/tag/v2.4.0>
 - What's new: <https://hkex-listco-updates.ascent-partners.com/news/>
 - Agent setup: <https://hkex-listco-updates.ascent-partners.com/ai-agents/>
 - Endpoint: `https://hkex-listco-updates.ascent-partners.com/api/mcp`
-- Registry name: `io.github.simonplmak-cloud/hkex-filings`
+- Registry name: `io.github.simonmak-ascent/hkex-filings`
 - Attach asset: `docs/social_preview.png` (1280×640)
 
 ## Posting order
@@ -71,7 +71,7 @@ Internal marketing notes. Not part of the docs site (kept out of `docs/` on purp
 > 3/ Prefer your own data? `pip install hkex-filing-scraper` writes 25+ years into any of nine
 > databases, and `hkex-scraper-mcp` serves it locally over stdio.
 > 4/ MIT, on PyPI, published to the official MCP registry:
-> `io.github.simonplmak-cloud/hkex-filings`.
+> `io.github.simonmak-ascent/hkex-filings`.
 
 ## Reddit — r/mcp
 
@@ -115,7 +115,7 @@ mcp-publisher publish
 curl -s "https://registry.modelcontextprotocol.io/v0/servers?search=hkex-filings" | head
 ```
 
-The PyPI ownership check reads `mcp-name: io.github.simonplmak-cloud/hkex-filings` from the
+The PyPI ownership check reads `mcp-name: io.github.simonmak-ascent/hkex-filings` from the
 2.4.0 README (confirmed present in the PyPI JSON).
 
 ## Metrics baseline (before launch)

@@ -36,4 +36,4 @@ tracked risks and their mitigations are in the [De-risking register](de-risking.
   [ADR 0003](adr/0003-sink-support-policy.md); open-source engines come first.
 
 Contributions that fit the roadmap — and `good first issue` items — are especially welcome;
-see [CONTRIBUTING](https://github.com/simonplmak-cloud/hkex-filing-scraper/blob/main/CONTRIBUTING.md).
+see [CONTRIBUTING](https://github.com/simonmak-ascent/hkex-filing-scraper/blob/main/CONTRIBUTING.md).

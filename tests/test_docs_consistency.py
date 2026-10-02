@@ -339,7 +339,7 @@ class TestMcpRegistryManifest:
 
     def test_remote_matches_the_documented_endpoint(self):
         manifest = self._manifest()
-        assert manifest["name"] == "io.github.simonplmak-cloud/hkex-filings"
+        assert manifest["name"] == "io.github.simonmak-ascent/hkex-filings"
         assert manifest["description"].endswith(".")
         assert f"{_site_domain()}/api/mcp" in [r["url"] for r in manifest["remotes"]]
 
