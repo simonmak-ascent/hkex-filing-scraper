@@ -1,19 +1,23 @@
 # HKEx Filing Scraper
 
+<!-- mcp-name: io.github.simonmak-ascent/hkex-filing-scraper -->
+
+> **An open-source scraper for 25+ years of HKEx regulatory filings** — into any of nine databases, with full-text extraction, graph linking, and a read-only MCP server for AI agents.
+
 ![HKEx Filing Scraper — one scraper, many databases](https://raw.githubusercontent.com/simonmak-ascent/hkex-filing-scraper/main/docs/social_preview.png)
 
 [![CI](https://github.com/simonmak-ascent/hkex-filing-scraper/actions/workflows/ci.yml/badge.svg)](https://github.com/simonmak-ascent/hkex-filing-scraper/actions/workflows/ci.yml)
+[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-io.github.simonmak--ascent%2Fhkex--filings-4CAF50)](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.simonmak-ascent/hkex-filings)
+[![Glama MCP](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper/badges/score.svg)](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper)
 [![GitHub Release](https://img.shields.io/github/v/release/simonmak-ascent/hkex-filing-scraper?color=green)](https://github.com/simonmak-ascent/hkex-filing-scraper/releases)
 [![PyPI](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpypi.org%2Fpypi%2Fhkex-filing-scraper%2Fjson&query=%24.info.version&label=PyPI&color=blue)](https://pypi.org/project/hkex-filing-scraper/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-io.github.simonmak--ascent%2Fhkex--filings-4CAF50)](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.simonmak-ascent/hkex-filings)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Docs](https://img.shields.io/badge/docs-hkex--listco--updates.ascent--partners.com-blue)](https://hkex-listco-updates.ascent-partners.com/)
 [![MCP](https://img.shields.io/badge/MCP-server-blueviolet)](https://hkex-listco-updates.ascent-partners.com/ai-agents/)
-[![Glama MCP](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper/badges/score.svg)](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper)
 [![Ruff](https://img.shields.io/badge/lint-ruff-261230.svg)](https://github.com/astral-sh/ruff)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **An open-source scraper for 25+ years of HKEx regulatory filings** — into any of nine databases, with full-text extraction, graph linking, and a read-only MCP server for AI agents.
+## Overview
 
 **The US has EDGAR full-text search. Japan has EDINET. Hong Kong has a search form that returns
 one page at a time.** There is no bulk, machine-readable, full-text corpus of HKEx filings. This
