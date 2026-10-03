@@ -1,9 +1,10 @@
 name: PyPI
 
-# Publish the built distributions to PyPI using Trusted Publishing (OpenID Connect):
-# the job authenticates to PyPI with a short-lived OIDC token, so no long-lived API token
-# exists anywhere. Runs alongside the GitHub Release workflow on a tag push, and can be
-# re-run by hand for a specific tag. `skip-existing` makes re-dispatch idempotent.
+# Publish the built distributions to PyPI using an API token stored as the
+# PYPI_API_TOKEN repository secret. Runs alongside the GitHub Release workflow on a tag
+# push, and can be re-run by hand for a specific tag. `skip-existing` makes re-dispatch
+# idempotent. (Trusted Publishing/OIDC was used before the GitHub owner rename; the PyPI
+# publisher is still bound to the old owner, so switch back to OIDC once it is updated.)
 
 on:
   push:
@@ -24,7 +25,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # OIDC identity for PyPI Trusted Publishing
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -43,8 +43,9 @@ jobs:
       - name: Validate the distribution metadata and README
         run: python -m twine check --strict dist/*
 
-      - name: Publish to PyPI via Trusted Publishing
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
           skip-existing: true
           print-hash: true
