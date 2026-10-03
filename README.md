@@ -6,6 +6,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/simonmak-ascent/hkex-filing-scraper?color=green)](https://github.com/simonmak-ascent/hkex-filing-scraper/releases)
 [![PyPI](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpypi.org%2Fpypi%2Fhkex-filing-scraper%2Fjson&query=%24.info.version&label=PyPI&color=blue)](https://pypi.org/project/hkex-filing-scraper/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-io.github.simonmak--ascent%2Fhkex--filings-4CAF50)](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.simonmak-ascent/hkex-filings)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Docs](https://img.shields.io/badge/docs-hkex--listco--updates.ascent--partners.com-blue)](https://hkex-listco-updates.ascent-partners.com/)
 [![MCP](https://img.shields.io/badge/MCP-server-blueviolet)](https://hkex-listco-updates.ascent-partners.com/ai-agents/)
