@@ -222,6 +222,65 @@ flowchart LR
 
 Deeper detail: [Architecture](docs/architecture.md) · [ADR 0002](docs/adr/0002-multi-sink-architecture.md).
 
+## HKEx API session
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as hkex-scraper
+    participant J as HKEx site (JSF)
+    participant A as HKEx JSON servlet
+    C->>J: GET /search/titlesearch.xhtml
+    J-->>C: HTML + javax.faces.ViewState
+    C->>J: POST form (from/to dates + ViewState)
+    C->>A: GET /search/titleSearchServlet.do (rowRange paging)
+    A-->>C: JSON page of filings
+    Note over C: generate_monthly_chunks() splits ranges > 1 month
+    C->>C: dedupe on 16-char MD5 filingId
+```
+
+## Data model
+
+```mermaid
+erDiagram
+    COMPANY ||--o{ EXCHANGE_FILING : has_filing
+    EXCHANGE_FILING ||--o{ DOCUMENT : has_document
+    EXCHANGE_FILING ||--o{ EXCHANGE_FILING : references_filing
+    EXCHANGE_FILING ||--o{ SCRAPE_COVERAGE : chunk_of
+    EXCHANGE_FILING {
+        string filingId "16-char MD5"
+        string stockCode
+        string title
+        datetime dateTime
+    }
+    DOCUMENT {
+        text documentText
+        array documentTables
+    }
+    SCRAPE_COVERAGE {
+        int apiCount
+        int ingestedCount
+        int uniqueCount
+        string runId
+    }
+```
+
+`exchange_filing` and `scrape_coverage` are SCHEMAFULL; `has_filing` /
+`references_filing` are the graph edges written by `graph.py`.
+
+## Sink contract and read routing
+
+```mermaid
+flowchart LR
+    CANON["canonical record<br/>per filing / document / coverage / edge"] --> DISPATCH["dispatch to every configured sink"]
+    DISPATCH --> S1["sink A"]
+    DISPATCH --> S2["sink B"]
+    DISPATCH --> SN["sink N"]
+    S1 -.->|error| LOG["logged + counted<br/>never blocks the others"]
+    READ["reads: pending filings · tickers · titles · coverage"] --> FIRST["first configured sink<br/>whose capabilities include reads"]
+    DISPATCH --> EXIT["sink_exit_code()<br/>non-zero if any sink failed"]
+```
+
 ## Features
 
 - **Fast API scraping** — direct HKEx JSON API; no browser or Selenium.
