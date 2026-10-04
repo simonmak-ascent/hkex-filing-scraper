@@ -113,7 +113,11 @@ in the [official MCP Registry](https://registry.modelcontextprotocol.io/) as
 > [Glama](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper), where Glama scans the
 > built server and scores tool-definition quality (currently 4.7/5).
 
-## Quick Start (Local)
+## Quick Start (≤ 5 minutes)
+
+**Fastest path:** no install — use the hosted gateway at
+`https://hkex-listco-updates.ascent-partners.com/api/mcp` (Streamable HTTP), or install and run
+locally:
 
 ```bash
 pip install hkex-filing-scraper        # core; SQLite needs no server
