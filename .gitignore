@@ -55,3 +55,9 @@ vdd/
 # Local marketing screenshots
 reddit-*.png
 x-compose-hkex.png
+
+# Local agent + VDD methodology artifacts — internal, never published
+AGENTS.md
+constitution.md
+vdd/
+specs/
