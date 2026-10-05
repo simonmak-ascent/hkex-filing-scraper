@@ -149,7 +149,7 @@ unblock.
 ## 9. Maintenance
 
 - **Bump Python**: change `python-version` in `release.yml` (and `ci.yml`).
-- **Bump actions**: update `actions/checkout@v4` / `actions/setup-python@v5` to current
+- **Bump actions**: update `actions/checkout@v7` / `actions/setup-python@v5` to current
   majors, then run the workflow once to confirm.
 - **Bump `hatch-vcs`**: it lives in `pyproject.toml` `[build-system].requires`. It is
   fetched at build time, so there is no lockfile to update.
