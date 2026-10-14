@@ -65,7 +65,7 @@ apps:
       slots: { blue: 8010, green: 8011 }
       package: "."
       requirements: api/requirements.txt
-      cmd: "fair-value-mcp --http --host 127.0.0.1 --port {port}"
+      cmd: "uvicorn mcp_server.asgi:app --host 127.0.0.1 --port {port}"
     docs: { build: "mkdocs build --strict", dir: site }
 
   - name: startup-valuation
@@ -83,9 +83,11 @@ apps:
     keep_releases: 3
     routes: { python: ["/api", "/api/calculate", "/api/index.py"] }
     python:
-      slots: { blue: 8020, green: 8021 }
+      slots: { blue: 8020, green: 8030 }
       package: "."
-      cmd: "python pylaunch.py --app api.index:handler --port {port}"
+      endpoints:
+        - { name: api,       launcher: pylaunch, app: "api.index:handler",     paths: ["/api", "/api/health", "/api/healthz", "/api/index.py"] }
+        - { name: calculate, launcher: pylaunch, app: "api.calculate:handler", paths: ["/api/calculate"] }
     docs: { build: "mkdocs build --strict", dir: site }
 
   - name: intangible-valuation
@@ -103,9 +105,11 @@ apps:
     keep_releases: 3
     routes: { python: ["/api/*"] }
     python:
-      slots: { blue: 8030, green: 8031 }
+      slots: { blue: 8050, green: 8060 }
       package: "."
-      cmd: "python pylaunch.py --app api.index:handler --port {port}"
+      endpoints:
+        - { name: mcp, launcher: pylaunch, app: "api.mcp:handler",   paths: ["/api/mcp*"] }
+        - { name: api, launcher: pylaunch, app: "api.index:handler", paths: ["/api/*"] }
     docs: { build: "mkdocs build --strict", dir: site }
 
   - name: hkex-listco-updates

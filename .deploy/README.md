@@ -64,3 +64,32 @@ app; the handler binds that slot to the IP. `ecs.g7.xlarge` supports 4 ENIs ×
 - `runner-bootstrap.sh` — register a self-hosted runner on a node.
 - `../.github/workflows/app-cd.yml` — reusable workflow.
 - `../website-host/provision-cd.sh` — one-time node bootstrap (layout, units, Caddy import).
+
+## Hosted apps (as deployed — ecs-01)
+
+| app | kind | surface |
+|---|---|---|
+| `apg-website` | next-website | Next.js site (+ geo locale redirect) |
+| `fair-value` | next-website | Next standalone + `uvicorn mcp_server.asgi:app` (`/mcp`, `/v1/*`) |
+| `startup-valuation` | next-website | Next standalone + 2 python endpoints (`/api` MCP, `/api/calculate`) |
+| `intangible-valuation` | next-website | Next standalone + `/api/*` python (MCP at `/api/mcp`) |
+| `hkex-listco-updates` | static | MkDocs at `/docs` + WSGI MCP (`/api/*`) |
+| `apg-infra` | terraform | infra plan/apply |
+
+Every app also serves its MkDocs at **`/docs`**.
+
+### Python endpoints
+
+An app may run one or more python services on a shared venv (`/opt/<app>/venv`,
+`uv`). Two manifest shapes:
+
+- **single**: `python.cmd` (+ `routes.python`) → unit `<app>-mcp@<slot>.service`,
+  port `python.slots.<slot>`.
+- **multi**: `python.endpoints: [{name, launcher, app, health?, paths[]}, …]` → one
+  unit `<app>-<name>@<slot>.service` per endpoint, port = slot base **+ index**;
+  Caddy routes each `paths[]` entry (longest path first). Launchers: `pylaunch`
+  (BaseHTTPRequestHandler), `wsgilaunch` (WSGI), `uvicorn` (ASGI).
+
+The venv bin is put first on the unit `PATH`; docs are built **inside that venv**
+so `mkdocstrings` can import the package.
+

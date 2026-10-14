@@ -24,6 +24,7 @@
   "globs": ["**/*.md"],
   "ignores": [
     "node_modules/**",
+    ".deploy/**",
     ".venv/**",
     "build/**",
     "site/**",

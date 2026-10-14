@@ -98,33 +98,60 @@ py_build() { # create/refresh the venv + install deps and the package
   if [ -n "$req" ] && [ -f "$REPO_DIR/$req" ]; then
     uv pip install --python "$venv/bin/python" -r "$REPO_DIR/$req" >/dev/null
   fi
+  local req pkg; req="$(mf python.requirements 2>/dev/null || true)"
+  if [ -n "$req" ] && [ -f "$REPO_DIR/$req" ]; then
+    uv pip install --python "$venv/bin/python" -r "$REPO_DIR/$req" >/dev/null
+  fi
   pkg="$(mf python.package 2>/dev/null || echo .)"
   uv pip install --python "$venv/bin/python" "$REPO_DIR/$pkg" >/dev/null
-  case "$(mf python.cmd)" in *gunicorn*) uv pip install --python "$venv/bin/python" gunicorn >/dev/null ;; esac
+  case "$(mf python.cmd 2>/dev/null || echo '')" in
+    *gunicorn*) uv pip install --python "$venv/bin/python" gunicorn >/dev/null ;;
+    *uvicorn*)  uv pip install --python "$venv/bin/python" uvicorn >/dev/null ;;
+  esac
+  if py_is_multi && mf python.endpoints 2>/dev/null | grep -q uvicorn; then
+    uv pip install --python "$venv/bin/python" uvicorn >/dev/null
+  fi
 }
 
-py_write_unit() {
-  local cmd; cmd="$(mf python.cmd)"; cmd="${cmd//\{port\}/\$PORT}"
-<<<<<<< HEAD
+# ── python endpoints: one service per endpoint (ports = slot base + index) ────
+# Manifest: python.endpoints = [{name, app, launcher?, health?, paths:[...]}, ...]
+# Legacy single endpoint: python.cmd (+ routes.python) → name "api".
+py_endpoints() { # TSV: name<TAB>index<TAB>cmd(with {port})
+  if mf python.endpoints >/dev/null 2>&1; then
+    python3 - "$(mf python.endpoints)" <<'PY'
+import json,sys
+for i,e in enumerate(json.loads(sys.argv[1])):
+    la=e.get("launcher","pylaunch"); app=e["app"]
+    if la=="uvicorn":
+        cmd=f"uvicorn {app} --host 127.0.0.1 --port {{port}}"
+    else:
+        extra=f" --health {e['health']}" if e.get("health") else ""
+        cmd=f"python {la}.py --app {app}{extra} --port {{port}}"
+    print(f"{e['name']}\t{i}\t{cmd}")
+PY
+  else
+    printf 'api\t0\t%s\n' "$(mf python.cmd)"
+  fi
+}
+py_is_multi()  { mf python.endpoints >/dev/null 2>&1; }
+py_unitname()  { if py_is_multi; then printf '%s-%s@.service' "$APP" "$1"; else printf '%s-mcp@.service' "$APP"; fi; }
+py_envname()   { if py_is_multi; then printf '/etc/%s/mcp-%s-%s.env' "$APP" "$1" "$2"; else printf '/etc/%s/mcp-%s.env' "$APP" "$2"; fi; }
+
+py_write_unit() { # <name> <cmd>
+  local name="$1" cmd="$2"; cmd="${cmd//\{port\}/\$PORT}"
   local vbin; vbin="$(py_root)/venv/bin"
-=======
->>>>>>> 6c944ea (feat(cd): host the site on ecs-01 (vendored CD + MkDocs static + WSGI MCP))
-  cat > "$(py_unit)" <<UNIT
+  cat > "/etc/systemd/system/$(py_unitname "$name")" <<UNIT
 [Unit]
-Description=${APP} Python MCP/REST slot %i
+Description=${APP} python endpoint '$name' slot %i
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 WorkingDirectory=$(py_root)/work/%i
-EnvironmentFile=-/etc/$APP/mcp-%i.env
-<<<<<<< HEAD
+EnvironmentFile=-$(py_envname "$name" '%i')
 # put the app venv first on PATH so \`python\` and the console scripts resolve
-ExecStart=/bin/bash -lc 'export PATH=$vbin:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin; set -a; . /etc/$APP/mcp-%i.env; set +a; cd $(py_root)/work/%i; exec $cmd'
-=======
-ExecStart=/bin/bash -lc 'set -a; . /etc/$APP/mcp-%i.env; set +a; exec $cmd'
->>>>>>> 6c944ea (feat(cd): host the site on ecs-01 (vendored CD + MkDocs static + WSGI MCP))
+ExecStart=/bin/bash -lc 'export PATH=$vbin:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin; set -a; . $(py_envname "$name" '%i'); set +a; cd $(py_root)/work/%i; exec $cmd'
 Restart=always
 RestartSec=5
 User=root
@@ -141,10 +168,47 @@ py_deploy() { # <slot>
   rsync -a --delete --exclude .git --exclude node_modules --exclude .next \
         --exclude .venv --exclude '__pycache__' --exclude '*.pyc' "$REPO_DIR/" "$work/"
   [ -d "$LAUNCHERS_DIR" ] && cp -a "$LAUNCHERS_DIR/." "$work/" || true
-  printf 'PORT=%s\n' "$(py_slot_port "$slot")" > "$(py_envfile "$slot")"
-  py_write_unit
-  systemctl enable --now "${APP}-mcp@${slot}" >/dev/null 2>&1 || true
-  systemctl restart "${APP}-mcp@${slot}"
+  local name idx cmd port svc base
+  base="$(py_slot_port "$slot")"
+  while IFS=$'\t' read -r name idx cmd; do
+    [ -z "$name" ] && continue
+    port=$(( base + idx ))
+    printf 'PORT=%s\n' "$port" > "$(py_envname "$name" "$slot")"
+    py_write_unit "$name" "$cmd"
+    svc="$(py_unitname "$name")"; svc="${svc%@.service}@${slot}"
+    systemctl enable --now "$svc" >/dev/null 2>&1 || true
+    systemctl restart "$svc"
+    log "python $APP/$name -> :$port ($svc)"
+  done < <(py_endpoints)
+}
+
+py_restart_slot() { # <slot> — restart every python endpoint unit for a slot
+  local name idx cmd svc
+  while IFS=$'\t' read -r name idx cmd; do
+    [ -z "$name" ] && continue
+    svc="$(py_unitname "$name")"; svc="${svc%@.service}@$1"
+    systemctl restart "$svc" 2>/dev/null || true
+  done < <(py_endpoints)
+}
+
+py_caddy_handles() { # <slot>  — emit a handle per python route (longest path first)
+  local base; base="$(py_slot_port "$1" 2>/dev/null || py_slot_port blue)"
+  if py_is_multi; then
+    python3 - "$(mf python.endpoints)" "$base" <<'PY'
+import json,sys
+base=int(sys.argv[2]); items=[]
+for i,e in enumerate(json.loads(sys.argv[1])):
+    for p in e.get("paths",[]):
+        items.append((p, base+i))
+for p,port in sorted(items, key=lambda x:-len(x[0])):
+    print(f"\thandle {p} {{\n\t\treverse_proxy 127.0.0.1:{port}\n\t}}")
+PY
+  else
+    python3 -c "import json,sys;[print(p) for p in json.loads(sys.argv[1])]" "$(mf routes.python 2>/dev/null || echo '[]')" 2>/dev/null | while IFS= read -r pat; do
+      [ -z "$pat" ] && continue
+      printf '\thandle %s {\n\t\treverse_proxy 127.0.0.1:%s\n\t}\n' "$pat" "$base"
+    done
+  fi
 }
 
 # ── mkdocs static docs → /srv/sites/<app> ─────────────────────────────────────
@@ -152,11 +216,17 @@ py_deploy() { # <slot>
 #                      docs.dir (default "site")
 docs_build() {
   local b; b="$(mf docs.build 2>/dev/null || echo 'mkdocs build --strict')"
+  local vpy; vpy="$(py_venv)/bin/python"
   if command -v mkdocs >/dev/null 2>&1; then
     ( cd "$REPO_DIR" && eval "$b" )
+  elif [ -x "$vpy" ]; then
+    # The app venv already has the package installed; mkdocstrings must be able
+    # to import it, so add the docs toolchain there and run from the venv.
+    uv pip install --python "$vpy" mkdocs-material 'mkdocstrings[python]' \
+        pymdown-extensions mkdocs >/dev/null 2>&1 || true
+    ( cd "$REPO_DIR" && PATH="$(py_venv)/bin:$PATH" eval "$b" )
   else
-    # no system mkdocs on the runner: run the repo's docs build under uvx, which
-    # puts mkdocs (material theme + pymdown + mkdocstrings) on PATH for the command.
+    # no system mkdocs and no app venv: run under uvx (material + pymdown + mkdocstrings).
     ( cd "$REPO_DIR" && uvx --from mkdocs-material --with 'mkdocstrings[python]' \
         --with pymdown-extensions --with mkdocs bash -lc "$b" )
   fi
@@ -195,13 +265,7 @@ write_app_vhost() {
       printf '\thandle_path %s/* {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$dpath" "$APP"
     fi
     # python MCP/REST routes
-    if py_has; then
-      local pport; pport="$(py_slot_port "$slot" 2>/dev/null || py_slot_port blue)"
-      python3 -c "import json,sys;[print(p) for p in json.loads(sys.argv[1])]" "$(mf routes.python 2>/dev/null || echo '[]')" 2>/dev/null | while IFS= read -r pat; do
-        [ -z "$pat" ] && continue
-        printf '\thandle %s {\n\t\treverse_proxy 127.0.0.1:%s\n\t}\n' "$pat" "$pport"
-      done
-    fi
+    py_has && py_caddy_handles "$slot"
     # catch-all
     printf '\thandle {\n'
     if [ "$(mf geo 2>/dev/null || echo false)" = "true" ]; then

@@ -69,6 +69,7 @@ cmd_build() {
 cmd_deploy() { # <slot>
   local slot="$1" dest="$APP_ROOT/$1"
   ensure_layout; write_unit
+  mf docs >/dev/null 2>&1 && docs_publish
   rm -rf "$dest"; mkdir -p "$dest"
   cp -a "$REPO_DIR/$(mf artifact)/." "$dest/"
   systemctl enable --now "${APP}@${slot}" >/dev/null 2>&1 || true
@@ -81,7 +82,7 @@ cmd_deploy() { # <slot>
 
 cmd_switch() { # <slot>  (prod)
   write_app_vhost "$PROD_FRAG" "$1" next
-  if py_has && [ -n "$(py_slot_port "$1" 2>/dev/null || true)" ]; then systemctl restart "${APP}-mcp@$1"; fi
+  if py_has && [ -n "$(py_slot_port "$1" 2>/dev/null || true)" ]; then py_restart_slot "$1"; fi
   caddy_reload
   printf '%s\n' "$1" > "$ACTIVE_FILE"
   log "prod -> $1 (next :$(slot_port "$1")${py_has:+ py :$(py_slot_port "$1" 2>/dev/null || echo -)})"
@@ -90,14 +91,18 @@ cmd_switch() { # <slot>  (prod)
 cmd_preview() { # <ts>
   local ts="$1" ph; ph="$(mf preview_host | sed "s/{{ts}}/$ts/")"
   cmd_deploy preview
+  mf docs >/dev/null 2>&1 && docs_publish
+  if py_has; then py_deploy blue 2>/dev/null || true; fi   # preview reuses blue python
   local cert key; cert="$(mf tls.cert)"; key="$(mf tls.key)"
-  cat > "$PREVIEW_FRAG" <<CADDY
-$ph {
-	encode zstd gzip
-	tls $cert $key
-	reverse_proxy 127.0.0.1:$(slot_port preview)
-}
-CADDY
+  {
+    printf '%s {\n' "$ph"
+    printf '\tencode zstd gzip\n\ttls %s %s\n' "$cert" "$key"
+    if mf docs >/dev/null 2>&1; then
+      printf '\thandle_path /docs/* {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$APP"
+    fi
+    py_has && py_caddy_handles blue
+    printf '\thandle {\n\t\treverse_proxy 127.0.0.1:%s\n\t}\n}\n' "$(slot_port preview)"
+  } > "$PREVIEW_FRAG"
   caddy_reload
   echo "$ph"
 }
