@@ -20,7 +20,7 @@ cmd_build() {
   log "build docs for $APP in $REPO_DIR"
   docs_build
   log "docs build ok"
-  py_has && py_build
+  if py_has; then py_build; fi
 }
 
 cmd_deploy() { # <slot>  (static: publish docs; python slot optional)

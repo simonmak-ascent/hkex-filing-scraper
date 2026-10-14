@@ -62,8 +62,9 @@ cmd_build() {
   cp -r "$REPO_DIR/.next/static" "$sd/.next/static"
   [ -d "$REPO_DIR/public" ] && cp -r "$REPO_DIR/public" "$sd/public" || mkdir -p "$sd/public"
   log "build ok -> $sd"
-  py_has && py_build
-  mf docs >/dev/null 2>&1 && docs_build
+  # optional extras must never fail the build when absent from the manifest
+  if py_has; then py_build; fi
+  if mf docs >/dev/null 2>&1; then docs_build; fi
 }
 
 cmd_deploy() { # <slot>
