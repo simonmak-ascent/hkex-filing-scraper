@@ -105,7 +105,10 @@ py_build() { # create/refresh the venv + install deps and the package
 
 py_write_unit() {
   local cmd; cmd="$(mf python.cmd)"; cmd="${cmd//\{port\}/\$PORT}"
+<<<<<<< HEAD
   local vbin; vbin="$(py_root)/venv/bin"
+=======
+>>>>>>> 6c944ea (feat(cd): host the site on ecs-01 (vendored CD + MkDocs static + WSGI MCP))
   cat > "$(py_unit)" <<UNIT
 [Unit]
 Description=${APP} Python MCP/REST slot %i
@@ -116,8 +119,12 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=$(py_root)/work/%i
 EnvironmentFile=-/etc/$APP/mcp-%i.env
+<<<<<<< HEAD
 # put the app venv first on PATH so \`python\` and the console scripts resolve
 ExecStart=/bin/bash -lc 'export PATH=$vbin:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin; set -a; . /etc/$APP/mcp-%i.env; set +a; cd $(py_root)/work/%i; exec $cmd'
+=======
+ExecStart=/bin/bash -lc 'set -a; . /etc/$APP/mcp-%i.env; set +a; exec $cmd'
+>>>>>>> 6c944ea (feat(cd): host the site on ecs-01 (vendored CD + MkDocs static + WSGI MCP))
 Restart=always
 RestartSec=5
 User=root

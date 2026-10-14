@@ -41,11 +41,15 @@ cmd_switch() { # <slot>
 cmd_preview() { # <ts>
   local ts="$1" ph; ph="$(mf preview_host | sed "s/{{ts}}/$ts/")"
   docs_publish
+<<<<<<< HEAD
   local api=""
   if py_has; then
     py_deploy blue 2>/dev/null || true   # preview reuses the blue python (no preview slot)
     api="$(printf '\thandle /api/* {\n\t\treverse_proxy 127.0.0.1:%s\n\t}' "$(py_port blue)")"
   fi
+=======
+  if py_has; then py_deploy "${2:-blue}" 2>/dev/null || true; fi
+>>>>>>> 6c944ea (feat(cd): host the site on ecs-01 (vendored CD + MkDocs static + WSGI MCP))
   local cert key; cert="$(mf tls.cert)"; key="$(mf tls.key)"
   cat > "$PREVIEW_FRAG" <<CADDY
 $ph {
@@ -55,7 +59,10 @@ $ph {
 		root * /srv/sites/$APP/docs
 		file_server
 	}
+<<<<<<< HEAD
 $api
+=======
+>>>>>>> 6c944ea (feat(cd): host the site on ecs-01 (vendored CD + MkDocs static + WSGI MCP))
 	handle {
 		redir /docs 302
 	}

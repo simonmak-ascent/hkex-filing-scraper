@@ -2,6 +2,7 @@
 # installed locally still cannot slip through.
 #
 #   pip install pre-commit && pre-commit install
+exclude: ^\.deploy/
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.7

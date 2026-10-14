@@ -1,10 +1,52 @@
 name: deploy
+# Single-file CD. The apg-infra platform is private (no cross-repo workflow_call)
+# and this repo's supply-chain policy forbids unpinned or locally-referenced
+# workflows, so the reusable app-cd steps are inlined here with a SHA-pinned
+# checkout and a read-only top-level token.
 on:
   pull_request:
   push:
     branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: app-cd-hkex-listco-updates
+  cancel-in-progress: false
 jobs:
   cd:
-    uses: ./.github/workflows/app-cd.yml
-    with: { app: hkex-listco-updates, runner: apg-ecs-01, e2e: false }
-    permissions: { contents: read, pull-requests: write }
+    runs-on: [self-hosted, linux, x64, apg-ecs-01]
+    env:
+      MANIFEST: ${{ github.workspace }}/.deploy/apps.yaml
+      APP: hkex-listco-updates
+      REPO_DIR: ${{ github.workspace }}
+      KIND_DIR: ${{ github.workspace }}/.deploy/kinds
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Resolve kind
+        id: kind
+        run: echo "kind=$(python3 -c "import yaml;d=yaml.safe_load(open('$MANIFEST'));print({a['name']:a['kind'] for a in d['apps']}['$APP'])")" >> "$GITHUB_OUTPUT"
+      - name: Build
+        run: bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" build
+      - name: Preview (PR)
+        if: github.event_name == 'pull_request'
+        id: preview
+        run: |
+          host=$(bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" preview "$(date -u +%Y%m%dT%H%M%S)" | tail -1)
+          echo "host=$host" >> "$GITHUB_OUTPUT"
+          echo "Preview ($APP): https://$host" >> "$GITHUB_STEP_SUMMARY"
+      - name: Deploy inactive slot (main)
+        if: github.event_name == 'push'
+        id: deploy
+        run: |
+          CUR=$(cat "/srv/apps/$APP/active-slot" 2>/dev/null || echo blue)
+          [ "$CUR" = blue ] && NEXT=green || NEXT=blue
+          echo "slot=$NEXT" >> "$GITHUB_OUTPUT"
+          bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" deploy "$NEXT"
+      - name: Switch + smoke (main)
+        if: github.event_name == 'push'
+        run: |
+          bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" switch "${{ steps.deploy.outputs.slot }}"
+          bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" smoke
+      - name: Rollback on failure (main)
+        if: failure() && github.event_name == 'push'
+        run: bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" rollback
