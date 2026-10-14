@@ -249,6 +249,11 @@ docs_publish() {
 # first (Caddy `handle` blocks are mutually exclusive, first match wins).
 # geoip2_vars runs at site level; the geo matchers live in the catch-all handle
 # (verified working: HK -> /hk while /mcp,/docs,/about route correctly).
+# IndexNow key: the key file (<key>.txt) is served at /<key>.txt on every app
+# vhost so search engines that adopt IndexNow (Bing/Microsoft, Yandex, Seznam,
+# Naver, …) can verify submissions.
+INDEXNOW_KEY="${INDEXNOW_KEY:-5b6db8fc53dbad8e8a4e85d5baf92f19}"
+
 write_app_vhost() {
   local out="$1" slot="$2" frontend="$3"
   local cert key; cert="$(mf tls.cert)"; key="$(mf tls.key)"
@@ -259,6 +264,7 @@ write_app_vhost() {
     printf '\tencode zstd gzip\n'
     printf '\ttls %s %s\n' "$cert" "$key"
     printf '\tgeoip2_vars strict\n'
+    printf '\thandle /%s.txt {\n\t\trespond "%s"\n\t}\n' "$INDEXNOW_KEY" "$INDEXNOW_KEY"
     # docs (mkdocs) at /docs
     if mf docs >/dev/null 2>&1; then
       local dpath; dpath="$(mf docs.path 2>/dev/null || echo /docs)"
