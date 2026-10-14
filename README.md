@@ -1,13 +1,13 @@
 # HKEx Filing Scraper
 
-<!-- mcp-name: io.github.simonmak-ascent/hkex-filing-scraper -->
+<!-- mcp-name: com.ascent-partners/hkex-filings -->
 
 > **An open-source scraper for 25+ years of HKEx regulatory filings** — into any of nine databases, with full-text extraction, graph linking, and a read-only MCP server for AI agents.
 
 ![HKEx Filing Scraper — one scraper, many databases](https://raw.githubusercontent.com/simonmak-ascent/hkex-filing-scraper/main/docs/social_preview.png)
 
 [![CI](https://github.com/simonmak-ascent/hkex-filing-scraper/actions/workflows/ci.yml/badge.svg)](https://github.com/simonmak-ascent/hkex-filing-scraper/actions/workflows/ci.yml)
-[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-io.github.simonmak--ascent%2Fhkex--filings-4CAF50)](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.simonmak-ascent/hkex-filings)
+[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-com.ascent-partners%2Fhkex-filings-4CAF50)](https://registry.modelcontextprotocol.io/v0/servers?search=com.ascent-partners/hkex-filings)
 [![Glama MCP](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper/badges/score.svg)](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper)
 [![GitHub Release](https://img.shields.io/github/v/release/simonmak-ascent/hkex-filing-scraper?color=green)](https://github.com/simonmak-ascent/hkex-filing-scraper/releases)
 [![PyPI](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpypi.org%2Fpypi%2Fhkex-filing-scraper%2Fjson&query=%24.info.version&label=PyPI&color=blue)](https://pypi.org/project/hkex-filing-scraper/)
@@ -28,7 +28,7 @@ regulatory filings and ingests them into **any combination of nine databases** �
 full-text and table extraction, chunk-level coverage, optional graph linking, and a
 **read-only MCP server** so AI agents can query the corpus or the live site.
 
-<!-- mcp-name: io.github.simonmak-ascent/hkex-filings -->
+<!-- mcp-name: com.ascent-partners/hkex-filings -->
 
 It speaks the undocumented HKEx JSON API directly, which is faster and more resilient than
 driving a browser.
@@ -107,7 +107,7 @@ Manus, and Perplexity is in [AI agent support](docs/ai-agents.md) — and for a 
 the [stdio MCP server](docs/mcp.md) exposes a wider tool catalog and is published on
 [Glama](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper). The gateway is listed
 in the [official MCP Registry](https://registry.modelcontextprotocol.io/) as
-`io.github.simonmak-ascent/hkex-filings`.
+`com.ascent-partners/hkex-filings`.
 
 > **Featured on Glama** — the read-only [stdio MCP server](docs/mcp.md) is also published on
 > [Glama](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper), where Glama scans the

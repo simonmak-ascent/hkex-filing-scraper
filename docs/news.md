@@ -33,7 +33,7 @@ You can now ask an AI agent about live HKEx filings — no install, no API key.
   Copilot), Gemini CLI, opencode, Manus, and Perplexity — copy-paste configuration in
   [AI agent support](ai-agents.md).
 - **Published to the official MCP Registry** as
-  `io.github.simonmak-ascent/hkex-filings`, which the third-party directories mirror.
+  `com.ascent-partners/hkex-filings`, which the third-party directories mirror.
 - **Hardening** — protocol `2025-03-26` negotiation, empty capability lists for probing
   clients, desktop-shell origins, CORS preflight, and edge rate limiting.
 
