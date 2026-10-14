@@ -1,0 +1,141 @@
+# APG deploy manifest — the single source of truth for what deploys where.
+#
+# Adding an app / sub-domain = one entry here + a caller workflow in that repo.
+# Adding a stack = a new handler in deploy/kinds/.
+#
+# Managed by deploy/app-cd.yml (reusable workflow) and the kind handlers.
+version: 1
+
+# Runner labels resolve to the self-hosted runner(s) registered on the node.
+nodes:
+  ecs-01:
+    host: ecs-01
+    eip: 47.57.231.113
+    runner: [self-hosted, linux, x64, apg-ecs-01]
+    # deploy root for app releases/slots on this node
+    srv_root: /srv/apps
+    caddy_conf_dir: /etc/caddy/conf.d
+
+apps:
+  # ── Production website (the only box-deployed production app today) ──
+  - name: apg-website
+    repo: simonmak-ascent/apg-website
+    node: ecs-01
+    kind: next-website
+    domain: ascent-partners.com
+    aliases:
+      - www.ascent-partners.com
+      - cn.ascent-partners.com
+    # any other *.ascent-partners.com host falls through to this redirect (kept LAST)
+    wildcard_redirect: "*.ascent-partners.com"
+    slots:
+      blue: 3000
+      green: 3001
+      preview: 3002
+    build: "corepack pnpm install --frozen-lockfile && CI=true corepack pnpm build"
+    artifact: .next/standalone
+    health:
+      - "/"
+      - "/zh"
+    preview_host: "preview-{{ts}}.ascent-partners.com"
+    tls:
+      cert: /etc/caddy/certs-website/ascent.fullchain.pem
+      key:  /etc/caddy/certs-website/ascent.key
+    keep_releases: 3
+    # bind_ip: 10.20.1.200   # OPTIONAL later: secondary private IP (+ EIP) for isolation
+
+  # ── Migrated tool sites (Vercel → ecs-01). Each: Next/static front-end +
+  #    optional Python MCP/REST service + mkdocs at /docs. Host resolves via the
+  #    *.ascent-partners.com wildcard (no per-host DNS record).
+  - name: fair-value
+    repo: simonmak-ascent/fair-value
+    node: ecs-01
+    kind: next-website
+    domain: fair-value.ascent-partners.com
+    geo: true
+    slots: { blue: 3100, green: 3101, preview: 3102 }
+    build: "corepack pnpm install --frozen-lockfile && CI=true corepack pnpm build"
+    artifact: .next/standalone
+    health: ["/"]
+    preview_host: "preview-fv-{{ts}}.ascent-partners.com"
+    tls: { cert: /etc/caddy/certs-website/ascent.fullchain.pem, key: /etc/caddy/certs-website/ascent.key }
+    keep_releases: 3
+    routes: { python: ["/mcp*", "/v1/*"] }
+    python:
+      slots: { blue: 8010, green: 8011 }
+      package: "."
+      requirements: api/requirements.txt
+      cmd: "fair-value-mcp --http --host 127.0.0.1 --port {port}"
+    docs: { build: "mkdocs build --strict", dir: site }
+
+  - name: startup-valuation
+    repo: simonmak-ascent/startup-valuation
+    node: ecs-01
+    kind: next-website
+    domain: startup-valuation.ascent-partners.com
+    geo: true
+    slots: { blue: 3110, green: 3111, preview: 3112 }
+    build: "corepack pnpm install --frozen-lockfile && CI=true corepack pnpm build"
+    artifact: .next/standalone
+    health: ["/"]
+    preview_host: "preview-sv-{{ts}}.ascent-partners.com"
+    tls: { cert: /etc/caddy/certs-website/ascent.fullchain.pem, key: /etc/caddy/certs-website/ascent.key }
+    keep_releases: 3
+    routes: { python: ["/api", "/api/calculate", "/api/index.py"] }
+    python:
+      slots: { blue: 8020, green: 8021 }
+      package: "."
+      cmd: "python pylaunch.py --app api.index:handler --port {port}"
+    docs: { build: "mkdocs build --strict", dir: site }
+
+  - name: intangible-valuation
+    repo: simonmak-ascent/intangible-valuation
+    node: ecs-01
+    kind: next-website
+    domain: intangible-valuation.ascent-partners.com
+    geo: true
+    slots: { blue: 3120, green: 3121, preview: 3122 }
+    build: "corepack pnpm install --frozen-lockfile && CI=true corepack pnpm build"
+    artifact: .next/standalone
+    health: ["/"]
+    preview_host: "preview-iv-{{ts}}.ascent-partners.com"
+    tls: { cert: /etc/caddy/certs-website/ascent.fullchain.pem, key: /etc/caddy/certs-website/ascent.key }
+    keep_releases: 3
+    routes: { python: ["/api/*"] }
+    python:
+      slots: { blue: 8030, green: 8031 }
+      package: "."
+      cmd: "python pylaunch.py --app api.index:handler --port {port}"
+    docs: { build: "mkdocs build --strict", dir: site }
+
+  - name: hkex-listco-updates
+    repo: simonmak-ascent/hkex-filing-scraper
+    node: ecs-01
+    kind: static
+    domain: hkex-listco-updates.ascent-partners.com
+    geo: false
+    preview_host: "preview-hkex-{{ts}}.ascent-partners.com"
+    tls: { cert: /etc/caddy/certs-website/ascent.fullchain.pem, key: /etc/caddy/certs-website/ascent.key }
+    health: ["/docs"]
+    routes: { python: ["/api/*"] }
+    python:
+      slots: { blue: 8040, green: 8041 }
+      package: "."
+      cmd: "python wsgilaunch.py --app api.mcp:app --health api.healthz:app --port {port}"
+    docs: { build: "mkdocs build --strict && python3 scripts/build_llms.py", dir: site }
+
+  # ── Infrastructure (apg-infra itself): plan on PR, apply on main ──
+  - name: apg-infra
+    repo: simonmak-ascent/apg-infra
+    node: ecs-01                 # runs on the same self-hosted runner
+    kind: terraform
+    tf_dir: .
+    tf_state:
+      bucket: apg-infra-tfstate
+      key: prod/terraform.tfstate
+      region: cn-hongkong
+    tf_vars:
+      image_id: ubuntu_24_04_x64_20G_alibase_20260916.vhd
+      ssh_key_name: apg-prod-key
+      admin_cidr: 0.0.0.0/0
+    # secrets: ALICLOUD_ACCESS_KEY / ALICLOUD_SECRET_KEY (scoped RAM user)
