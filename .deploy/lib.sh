@@ -285,7 +285,15 @@ emit_security_headers() {
 # apg-website scripts/gen-error-pages.mjs and published by `errors_publish`.
 emit_site_extras() {
   local statuses="${*:-403 429 502 503 504}"
+  # Access logging is opt-in PER SITE in Caddy; every vhost writes the same
+  # rolling JSON file, which the edge-log-shipper tails into PostgreSQL. The
+  # `log_append` fields (request_id, country) land on each access entry.
+  printf '\tlog {\n'
+  printf '\t\toutput file /var/log/caddy/access.jsonl {\n'
+  printf '\t\t\troll_size 20MiB\n\t\t\troll_keep 10\n\t\t\troll_keep_for 168h\n'
+  printf '\t\t}\n\t\tformat json\n\t\tlevel INFO\n\t}\n'
   printf '\tlog_append request_id {http.request.uuid}\n'
+  printf '\tlog_append country {geoip2.country_code}\n'
   printf '\thandle_errors %s {\n' "$statuses"
   # machine-readable variants (MCP / REST / well-known) — never HTML
   printf '\t\t@api path /mcp /mcp/* /api /api/* /v1 /v1/* /.well-known/mcp*\n'
