@@ -1,0 +1,91 @@
+name: app-cd
+
+# Self-hosted (in-repo) reusable CD. Called by .github/workflows/deploy.yml.
+# Verbs/behaviour mirror apg-infra's platform; handlers live in .deploy/kinds/.
+on:
+  workflow_call:
+    inputs:
+      app:
+        type: string
+        required: true
+      runner:
+        type: string
+        required: false
+        default: apg-ecs-01
+      e2e:
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  # One prod deploy at a time (same ref => serialised, never cancelled);
+  # superseded PR-preview deploys are cancelled instead of queueing, so a
+  # burst of previews can no longer starve the required `check` on the runner.
+  group: app-cd-${{ inputs.app }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  cd:
+    runs-on: [self-hosted, linux, x64, "${{ inputs.runner }}"]
+    env:
+      MANIFEST: ${{ github.workspace }}/.deploy/apps.yaml
+      APP: ${{ inputs.app }}
+      REPO_DIR: ${{ github.workspace }}
+      KIND_DIR: ${{ github.workspace }}/.deploy/kinds
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Resolve kind
+        id: kind
+        run: |
+          KIND=$(python3 -c "import yaml;d=yaml.safe_load(open('$MANIFEST'));print({a['name']:a['kind'] for a in d['apps']}['$APP'])")
+          echo "kind=$KIND" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" build
+
+      - name: Deploy preview
+        if: github.event_name == 'pull_request'
+        id: preview
+        run: |
+          TS=$(date -u +%Y%m%dT%H%M%S)
+          HOST=$(bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" preview "$TS" | tail -1)
+          echo "host=$HOST" >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview URL
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2
+        with:
+          header: cd-preview
+          message: |
+            🌐 **Preview** (${{ inputs.app }}): https://${{ steps.preview.outputs.host }}
+            _commit ${{ github.event.pull_request.head.sha }} — rebuilds on every push._
+
+      - name: Deploy to inactive slot
+        if: github.event_name == 'push'
+        id: deploy
+        run: |
+          CUR=$(cat "/srv/apps/$APP/active-slot" 2>/dev/null || echo blue)
+          [ "$CUR" = blue ] && NEXT=green || NEXT=blue
+          echo "slot=$NEXT" >> "$GITHUB_OUTPUT"
+          bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" deploy "$NEXT"
+
+      - name: Switch production traffic
+        if: github.event_name == 'push'
+        run: bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" switch "${{ steps.deploy.outputs.slot }}"
+
+      - name: Smoke test
+        if: github.event_name == 'push'
+        run: bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" smoke
+
+      # Keyless search-engine submission (IndexNow); non-blocking by design —
+      # a rejected batch must not fail or roll back a healthy deploy.
+      - name: Submit to IndexNow
+        if: github.event_name == 'push'
+        continue-on-error: true
+        run: node scripts/indexnow.mjs
+
+      - name: Rollback on failure
+        if: failure() && github.event_name == 'push'
+        run: bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" rollback

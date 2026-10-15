@@ -27,6 +27,8 @@ apps:
       - www.ascent-partners.com
     # any other *.ascent-partners.com host falls through to this redirect (kept LAST)
     wildcard_redirect: "*.ascent-partners.com"
+    # ship the branded edge error pages (public/errors/) + own the wildcard 404 vhost
+    edge_errors: true
     # emit the edge geo locale matchers (@geo_zh/@geo_hk/@geo_ja/@geo_ar) in write_app_vhost
     geo: true
     slots:

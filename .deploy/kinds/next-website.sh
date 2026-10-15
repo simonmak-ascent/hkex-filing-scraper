@@ -100,6 +100,7 @@ cmd_deploy() { # <slot>
 
 cmd_switch() { # <slot>  (prod)
   write_app_vhost "$PROD_FRAG" "$1" next
+  edge_errors_enabled && errors_publish "$1"
   if py_has && [ -n "$(py_slot_port "$1" 2>/dev/null || true)" ]; then py_restart_slot "$1"; fi
   caddy_reload
   printf '%s\n' "$1" > "$ACTIVE_FILE"
@@ -115,12 +116,14 @@ cmd_preview() { # <ts>
   {
     printf '%s {\n' "$ph"
     printf '\tencode zstd gzip\n\ttls %s %s\n' "$cert" "$key"
-    printf '\theader {\n\t\tStrict-Transport-Security "max-age=31536000; includeSubDomains"\n\t\tX-Content-Type-Options "nosniff"\n\t\tX-Frame-Options "SAMEORIGIN"\n\t\tReferrer-Policy "strict-origin-when-cross-origin"\n\t\tX-Robots-Tag "noindex, nofollow"\n\t}\n'
+    printf '\theader {\n\t\tStrict-Transport-Security "max-age=31536000; includeSubDomains"\n\t\tX-Content-Type-Options "nosniff"\n\t\tX-Frame-Options "SAMEORIGIN"\n\t\tReferrer-Policy "strict-origin-when-cross-origin"\n\t\tX-Robots-Tag "noindex, nofollow"\n\t\tX-Request-Id "{http.request.uuid}"\n\t}\n'
     if mf docs >/dev/null 2>&1; then
       printf '\thandle_path /docs/* {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$APP"
     fi
     py_has && py_caddy_handles blue
-    printf '\thandle {\n\t\treverse_proxy 127.0.0.1:%s\n\t}\n}\n' "$(slot_port preview)"
+    printf '\thandle {\n\t\treverse_proxy 127.0.0.1:%s\n\t}\n' "$(slot_port preview)"
+    emit_site_extras
+    printf '}\n'
   } > "$PREVIEW_FRAG"
   caddy_reload
   echo "$ph"

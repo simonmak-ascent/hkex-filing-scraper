@@ -58,6 +58,7 @@ $ph {
 		X-Frame-Options "SAMEORIGIN"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		X-Robots-Tag "noindex, nofollow"
+		X-Request-Id "{http.request.uuid}"
 	}
 	handle_path /docs/* {
 		root * /srv/sites/$APP/docs
@@ -67,6 +68,7 @@ $api
 	handle {
 		redir /docs 302
 	}
+$(emit_site_extras)
 }
 CADDY
   caddy_reload
