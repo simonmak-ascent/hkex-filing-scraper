@@ -23,7 +23,14 @@ ensure_layout() {
   mkdir -p "$APP_ROOT" "$ENVDIR" "$CADDY_CONF_DIR"
   local s
   for s in $(mf "slots" | python3 -c "import json,sys;print(' '.join(json.load(sys.stdin).keys()))"); do
-    printf 'PORT=%s\n' "$(slot_port "$s")" > "$ENVDIR/$s.env"
+    # Never clobber operator-added env (secrets/config): ensure the file exists
+    # and keep PORT in step with the manifest, leaving other keys untouched.
+    touch "$ENVDIR/$s.env"
+    if grep -q '^PORT=' "$ENVDIR/$s.env"; then
+      sed -i "s|^PORT=.*|PORT=$(slot_port "$s")|" "$ENVDIR/$s.env"
+    else
+      printf 'PORT=%s\n' "$(slot_port "$s")" >> "$ENVDIR/$s.env"
+    fi
   done
 }
 
@@ -68,17 +75,27 @@ cmd_build() {
 }
 
 cmd_deploy() { # <slot>
-  local slot="$1" dest="$APP_ROOT/$1"
-  ensure_layout; write_unit
-  mf docs >/dev/null 2>&1 && docs_publish
-  rm -rf "$dest"; mkdir -p "$dest"
-  cp -a "$REPO_DIR/$(mf artifact)/." "$dest/"
+  local slot="$1" dest="$APP_ROOT/$1" artifact
+  # Every staging step names itself: a failure here once exited 1 with no output,
+  # so the run rolled back with no clue which command died.
+  log "deploy $slot: layout"
+  ensure_layout || die "ensure_layout failed for $slot"
+  write_unit || die "write_unit failed for $slot"
+  if mf docs >/dev/null 2>&1; then docs_publish || die "docs_publish failed for $slot"; fi
+  artifact="$(mf artifact || true)"
+  [ -n "$artifact" ] || die "manifest artifact path is empty for $APP"
+  [ -d "$REPO_DIR/$artifact" ] || die "artifact dir missing: $REPO_DIR/$artifact"
+  log "deploy $slot: stage artifact ($artifact)"
+  rm -rf "$dest" || die "could not clear $dest"
+  mkdir -p "$dest" || die "could not create $dest"
+  cp -a "$REPO_DIR/$artifact/." "$dest/" || die "artifact copy failed: $REPO_DIR/$artifact -> $dest"
+  log "deploy $slot: restart unit ${APP}@${slot}"
   systemctl enable --now "${APP}@${slot}" >/dev/null 2>&1 || true
-  systemctl restart "${APP}@${slot}"
+  systemctl restart "${APP}@${slot}" || die "systemctl restart ${APP}@${slot} failed"
   sleep 3
-  health_check "$(slot_port "$slot")" "$DOMAIN"
+  health_check "$(slot_port "$slot")" "$DOMAIN" || die "health check failed for $slot on :$(slot_port "$slot")"
   # python service (skip when this slot has no python slot, e.g. preview)
-  if py_has && [ -n "$(py_slot_port "$slot" 2>/dev/null || true)" ]; then py_deploy "$slot"; fi
+  if py_has && [ -n "$(py_slot_port "$slot" 2>/dev/null || true)" ]; then py_deploy "$slot" || die "py_deploy failed for $slot"; fi
 }
 
 cmd_switch() { # <slot>  (prod)
@@ -98,6 +115,7 @@ cmd_preview() { # <ts>
   {
     printf '%s {\n' "$ph"
     printf '\tencode zstd gzip\n\ttls %s %s\n' "$cert" "$key"
+    printf '\theader {\n\t\tStrict-Transport-Security "max-age=31536000; includeSubDomains"\n\t\tX-Content-Type-Options "nosniff"\n\t\tX-Frame-Options "SAMEORIGIN"\n\t\tReferrer-Policy "strict-origin-when-cross-origin"\n\t\tX-Robots-Tag "noindex, nofollow"\n\t}\n'
     if mf docs >/dev/null 2>&1; then
       printf '\thandle_path /docs/* {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$APP"
     fi

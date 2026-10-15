@@ -25,9 +25,10 @@ apps:
     domain: ascent-partners.com
     aliases:
       - www.ascent-partners.com
-      - cn.ascent-partners.com
     # any other *.ascent-partners.com host falls through to this redirect (kept LAST)
     wildcard_redirect: "*.ascent-partners.com"
+    # emit the edge geo locale matchers (@geo_zh/@geo_hk/@geo_ja/@geo_ar) in write_app_vhost
+    geo: true
     slots:
       blue: 3000
       green: 3001
@@ -37,6 +38,8 @@ apps:
     health:
       - "/"
       - "/zh"
+      - "/ja"
+      - "/ar"
     preview_host: "preview-{{ts}}.ascent-partners.com"
     tls:
       cert: /etc/caddy/certs-website/ascent.fullchain.pem
@@ -127,6 +130,26 @@ apps:
       package: "."
       cmd: "python wsgilaunch.py --app api.mcp:app --health api.healthz:app --port {port}"
     docs: { build: "mkdocs build --strict && python3 scripts/build_llms.py", dir: site }
+
+  # ── coso-mcp: Node MCP service (COSO internal-control review). Vercel → ecs-01.
+  #    Host resolves via the *.ascent-partners.com wildcard (no per-host DNS record).
+  - name: coso-mcp
+    repo: simonmak-ascent/coso-mcp
+    node: ecs-01
+    kind: node-service
+    domain: internal-control.ascent-partners.com
+    geo: false
+    slots: { blue: 8070, green: 8071, preview: 8072 }
+    build: "corepack pnpm install --frozen-lockfile && corepack pnpm build"
+    include: ["dist", "public", "server.mjs", "package.json", "pnpm-lock.yaml"]
+    # --ignore-scripts: the release dir needs only runtime deps; skip the
+    # `prepare` (build) hook that --prod would otherwise run without devDeps.
+    install: "corepack pnpm install --prod --frozen-lockfile --ignore-scripts"
+    entry: server.mjs
+    health: ["/healthz"]
+    preview_host: "preview-coso-{{ts}}.ascent-partners.com"
+    tls: { cert: /etc/caddy/certs-website/ascent.fullchain.pem, key: /etc/caddy/certs-website/ascent.key }
+    keep_releases: 3
 
   # ── Infrastructure (apg-infra itself): plan on PR, apply on main ──
   - name: apg-infra

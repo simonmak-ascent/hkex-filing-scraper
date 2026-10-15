@@ -21,7 +21,7 @@ if app not in apps: sys.exit(f"app '{app}' not in manifest")
 v = apps[app]
 for k in path.split("."):
     v = v[k]
-print(v if not isinstance(v, (list, dict)) else __import__("json").dumps(v))
+print("true" if v is True else "false" if v is False else (__import__("json").dumps(v) if isinstance(v, (list, dict)) else v))
 PY
 }
 
@@ -36,7 +36,7 @@ n = d["nodes"][a["node"]]
 v = n
 for k in path.split("."):
     v = v[k]
-print(v if not isinstance(v, (list, dict)) else __import__("json").dumps(v))
+print("true" if v is True else "false" if v is False else (__import__("json").dumps(v) if isinstance(v, (list, dict)) else v))
 PY
 }
 
@@ -244,15 +244,31 @@ docs_publish() {
 # write_app_vhost <outfile> <slot> <frontend>
 #   frontend = next   -> catch-all reverse_proxy 127.0.0.1:<next slot port>
 #   frontend = static -> catch-all redir /docs 302 (docs-native app; docs at /docs)
-# Emits: geo redirect + docs (/docs) + python routes + coraza + rate_limit inside
-# a catch-all `handle`; specific `handle`s for /docs and the python routes come
-# first (Caddy `handle` blocks are mutually exclusive, first match wins).
-# geoip2_vars runs at site level; the geo matchers live in the catch-all handle
-# (verified working: HK -> /hk while /mcp,/docs,/about route correctly).
+# Emits: geo country header + docs (/docs) + python routes + coraza + rate_limit
+# inside a catch-all `handle`; specific `handle`s for /docs and the python routes
+# come first (Caddy `handle` blocks are mutually exclusive, first match wins).
+# geoip2_vars runs at site level and resolves the visitor IP. For `next` apps the
+# entry locale is decided in the app from text-first signals (cookie →
+# Accept-Language → country); the vhost injects the country (`header_up
+# X-Geo-Country`) so the app can use it, and keeps a country redirect that fires
+# ONLY when the client states no language (belt-and-braces: the country fallback
+# then never depends on the injected header surviving the proxy chain).
 # IndexNow key: the key file (<key>.txt) is served at /<key>.txt on every app
 # vhost so search engines that adopt IndexNow (Bing/Microsoft, Yandex, Seznam,
 # Naver, …) can verify submissions.
 INDEXNOW_KEY="${INDEXNOW_KEY:-5b6db8fc53dbad8e8a4e85d5baf92f19}"
+
+# Response-hardening headers emitted by every vhost (production + preview).
+# HSTS without `preload` (reversible); includeSubDomains is safe — every
+# *.ascent-partners.com host is HTTPS-only behind Caddy.
+emit_security_headers() {
+  printf '\theader {\n'
+  printf '\t\tStrict-Transport-Security "max-age=31536000; includeSubDomains"\n'
+  printf '\t\tX-Content-Type-Options "nosniff"\n'
+  printf '\t\tX-Frame-Options "SAMEORIGIN"\n'
+  printf '\t\tReferrer-Policy "strict-origin-when-cross-origin"\n'
+  printf '\t}\n'
+}
 
 write_app_vhost() {
   local out="$1" slot="$2" frontend="$3"
@@ -264,6 +280,13 @@ write_app_vhost() {
     printf '\tencode zstd gzip\n'
     printf '\ttls %s %s\n' "$cert" "$key"
     printf '\tgeoip2_vars strict\n'
+    emit_security_headers
+    # One canonical origin: permanently move any "www." alias to the apex host
+    # (path + query preserved) so there is a single indexable origin. Other
+    # aliases (e.g. a China edge host) stay as served copies of the same site.
+    case ",$aliases," in
+      *",www.$DOMAIN,"*) printf '\t@www host www.%s\n\tredir @www https://%s{uri} 301\n' "$DOMAIN" "$DOMAIN" ;;
+    esac
     printf '\thandle /%s.txt {\n\t\trespond "%s"\n\t}\n' "$INDEXNOW_KEY" "$INDEXNOW_KEY"
     # docs (mkdocs) at /docs
     if mf docs >/dev/null 2>&1; then
@@ -274,15 +297,29 @@ write_app_vhost() {
     py_has && py_caddy_handles "$slot"
     # catch-all
     printf '\thandle {\n'
+    # Country fallback, fired ONLY when the client sent no Accept-Language: when a
+    # language is stated the app decides (so language always outranks the IP), and
+    # this path is skipped. Uses the edge's own geoip2 matcher, so the country
+    # fallback does not depend on the injected header surviving to the app.
     if [ "$(mf geo 2>/dev/null || echo false)" = "true" ]; then
-      printf '\t\t@geo_zh {\n\t\t\tpath /\n\t\t\texpression `{geoip2.country_code} == "CN"`\n\t\t\tnot header_regexp NEXT_LOCALE Cookie .\n\t\t}\n\t\tredir @geo_zh /zh 302\n'
-      printf '\t\t@geo_hk {\n\t\t\tpath /\n\t\t\texpression `{geoip2.country_code} in ["TW", "HK", "MO"]`\n\t\t\tnot header_regexp NEXT_LOCALE Cookie .\n\t\t}\n\t\tredir @geo_hk /hk 302\n'
+      printf '\t\t@geo_zh {\n\t\t\tpath /\n\t\t\texpression `{geoip2.country_code} == "CN"`\n\t\t\tnot header_regexp NEXT_LOCALE Cookie .\n\t\t\tnot header_regexp Accept-Language .\n\t\t}\n\t\tredir @geo_zh /zh 302\n'
+      printf '\t\t@geo_hk {\n\t\t\tpath /\n\t\t\texpression `{geoip2.country_code} in ["TW", "HK", "MO"]`\n\t\t\tnot header_regexp NEXT_LOCALE Cookie .\n\t\t\tnot header_regexp Accept-Language .\n\t\t}\n\t\tredir @geo_hk /hk 302\n'
+      printf '\t\t@geo_ja {\n\t\t\tpath /\n\t\t\texpression `{geoip2.country_code} == "JP"`\n\t\t\tnot header_regexp NEXT_LOCALE Cookie .\n\t\t\tnot header_regexp Accept-Language .\n\t\t}\n\t\tredir @geo_ja /ja 302\n'
+      printf '\t\t@geo_ar {\n\t\t\tpath /\n\t\t\texpression `{geoip2.country_code} in ["DZ", "BH", "KM", "DJ", "EG", "IQ", "JO", "KW", "LB", "LY", "MA", "MR", "OM", "PS", "QA", "SA", "SO", "SD", "SY", "TN", "AE", "YE"]`\n\t\t\tnot header_regexp NEXT_LOCALE Cookie .\n\t\t\tnot header_regexp Accept-Language .\n\t\t}\n\t\tredir @geo_ar /ar 302\n'
     fi
     printf '\t\tcoraza_waf {\n\t\t\tload_owasp_crs\n\t\t\tdirectives `\n\t\t\t\tInclude @coraza.conf-recommended\n\t\t\t\tInclude @crs-setup.conf.example\n\t\t\t\tInclude @owasp_crs/*.conf\n\t\t\t\tSecRuleEngine DetectionOnly\n\t\t\t`\n\t\t}\n'
     printf '\t\trate_limit {\n\t\t\tzone perip {\n\t\t\t\tkey {remote_host}\n\t\t\t\tevents 1500\n\t\t\t\twindow 1m\n\t\t\t}\n\t\t}\n'
     case "$frontend" in
-      next)   printf '\t\treverse_proxy 127.0.0.1:%s\n' "$(slot_port "$slot")" ;;
+      next)
+        # Inject the resolved country; the app owns entry-locale routing.
+        if [ "$(mf geo 2>/dev/null || echo false)" = "true" ]; then
+          printf '\t\treverse_proxy 127.0.0.1:%s {\n\t\t\theader_up X-Geo-Country {geoip2.country_code}\n\t\t}\n' "$(slot_port "$slot")"
+        else
+          printf '\t\treverse_proxy 127.0.0.1:%s\n' "$(slot_port "$slot")"
+        fi
+        ;;
       static) printf '\t\tredir /docs 302\n' ;;
+      node) printf '\t\treverse_proxy 127.0.0.1:%s\n' "$(slot_port "$slot")" ;;
       *) die "write_app_vhost: unknown frontend '$frontend'" ;;
     esac
     printf '\t}\n'
