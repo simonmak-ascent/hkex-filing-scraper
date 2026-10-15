@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/simonmak-ascent/hkex-filing-scraper/actions/workflows/ci.yml/badge.svg)](https://github.com/simonmak-ascent/hkex-filing-scraper/actions/workflows/ci.yml)
 [![MCP Registry](https://img.shields.io/badge/MCP%20Registry-com.ascent-partners%2Fhkex-filings-4CAF50)](https://registry.modelcontextprotocol.io/v0/servers?search=com.ascent-partners/hkex-filings)
-[![Glama MCP](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper/badges/score.svg)](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper)
+[![Glama MCP](https://glama.ai/mcp/connectors/com.ascent-partners/hkex-filings/badges/score.svg)](https://glama.ai/mcp/connectors/com.ascent-partners/hkex-filings)
 [![GitHub Release](https://img.shields.io/github/v/release/simonmak-ascent/hkex-filing-scraper?color=green)](https://github.com/simonmak-ascent/hkex-filing-scraper/releases)
 [![PyPI](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpypi.org%2Fpypi%2Fhkex-filing-scraper%2Fjson&query=%24.info.version&label=PyPI&color=blue)](https://pypi.org/project/hkex-filing-scraper/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -51,7 +51,7 @@ driving a browser.
 [Claude, ChatGPT, Cursor, VS Code/Copilot, Gemini CLI, opencode, Manus, and Perplexity](docs/ai-agents.md).
 
 **Available on** — [PyPI](https://pypi.org/project/hkex-filing-scraper/) ·
-[Glama](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper) ·
+[Glama](https://glama.ai/mcp/connectors/com.ascent-partners/hkex-filings) ·
 [MCP Registry](https://registry.modelcontextprotocol.io/) ·
 [hosted gateway](https://hkex-listco-updates.ascent-partners.com/api/mcp).
 
@@ -105,12 +105,12 @@ then summarise the interim report.
 Ready-made configuration for Claude, ChatGPT, Cursor, VS Code/Copilot, Gemini CLI, opencode,
 Manus, and Perplexity is in [AI agent support](docs/ai-agents.md) — and for a stored corpus,
 the [stdio MCP server](docs/mcp.md) exposes a wider tool catalog and is published on
-[Glama](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper). The gateway is listed
+[Glama](https://glama.ai/mcp/connectors/com.ascent-partners/hkex-filings). The gateway is listed
 in the [official MCP Registry](https://registry.modelcontextprotocol.io/) as
 `com.ascent-partners/hkex-filings`.
 
 > **Featured on Glama** — the read-only [stdio MCP server](docs/mcp.md) is also published on
-> [Glama](https://glama.ai/mcp/servers/simonmak-ascent/hkex-filing-scraper), where Glama scans the
+> [Glama](https://glama.ai/mcp/connectors/com.ascent-partners/hkex-filings), where Glama scans the
 > built server and scores tool-definition quality (currently 4.7/5).
 
 ## Quick Start (≤ 5 minutes)
