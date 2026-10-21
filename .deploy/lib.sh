@@ -64,8 +64,10 @@ caddy_reload() {
   caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null || die "invalid Caddy config; not reloading"
   # Use `restart`, not `reload`: the admin-API reload re-inits standard modules
   # but does NOT re-register the geoip2 handler's per-request replacer, so a
-  # geo/routing change silently fails to take effect. Restart reliably re-applies
-  # (brief edge blip; the app slots behind it are untouched).
+  # geo/routing change silently fails to take effect. Serialize restarts across
+  # app repos: concurrent deploys otherwise race and fail each other's reload.
+  exec 9>/run/caddy-deploy.lock
+  flock -w 120 9 || die "timed out waiting for the Caddy deploy lock"
   systemctl restart caddy
 }
 
