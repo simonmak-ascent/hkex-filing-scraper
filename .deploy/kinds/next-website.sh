@@ -52,7 +52,7 @@ EnvironmentFile=$ENVDIR/%i.env
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=5
-User=root
+User=${APP_USER}
 
 [Install]
 WantedBy=multi-user.target

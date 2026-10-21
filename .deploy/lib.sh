@@ -41,6 +41,7 @@ print("true" if v is True else "false" if v is False else (__import__("json").du
 PY
 }
 
+APP_USER="${APP_USER:-deploy}"
 APP_NODE="$(mf node)"
 SRV_ROOT="$(mf_node srv_root)"
 APP_ROOT="$SRV_ROOT/$APP"
@@ -167,7 +168,7 @@ EnvironmentFile=-$(py_envname "$name" '%i')
 ExecStart=/bin/bash -lc 'export PATH=$vbin:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin; set -a; . $(py_envname "$name" '%i'); set +a; cd $(py_root)/work/%i; exec $cmd'
 Restart=always
 RestartSec=5
-User=root
+User=${APP_USER}
 
 [Install]
 WantedBy=multi-user.target
