@@ -4,7 +4,8 @@ name: deploy
 # workflows, so the reusable app-cd steps are inlined here with a SHA-pinned
 # checkout and a read-only top-level token.
 on:
-  pull_request:
+  # Pull requests are validated on GitHub-hosted runners by ci.yml.
+  # Never execute pull-request code on the self-hosted deploy runner.
   push:
     branches: [main]
 permissions:
