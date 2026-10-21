@@ -70,7 +70,7 @@ duckdb = ["duckdb>=1.0"]
 mongodb = ["pymongo>=4.6"]
 clickhouse = ["clickhouse-connect>=0.7"]
 neo4j = ["neo4j>=5.20"]
-mcp = ["mcp>=1.30,<2"]
+mcp = ["mcp>=1.30,<3"]
 all = [
     "openpyxl>=3.1",
     "python-dotenv>=1.0",
@@ -80,7 +80,7 @@ all = [
     "pymongo>=4.6",
     "clickhouse-connect>=0.7",
     "neo4j>=5.20",
-    "mcp>=1.30,<2",
+    "mcp>=1.30,<3",
 ]
 dev = [
     "hypothesis>=6.100",
