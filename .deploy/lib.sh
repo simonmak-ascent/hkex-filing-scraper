@@ -7,6 +7,7 @@ set -euo pipefail
 
 log()  { printf '[cd] %s\n' "$*" >&2; }
 die()  { printf '[cd] ERROR: %s\n' "$*" >&2; exit 1; }
+as_root() { sudo -n "$@"; }
 LAUNCHERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/launchers"
 
 # mf <jq-ish dot path>  ->  print value from this app's manifest entry
@@ -69,14 +70,14 @@ write_file_atomic() { # <dest> — never expose a partially-written Caddy fragme
 }
 
 caddy_reload() {
-  caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null || die "invalid Caddy config; not reloading"
+  as_root caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null || die "invalid Caddy config; not reloading"
   # Use `restart`, not `reload`: the admin-API reload re-inits standard modules
   # but does NOT re-register the geoip2 handler's per-request replacer, so a
   # geo/routing change silently fails to take effect. Serialize restarts across
   # app repos: concurrent deploys otherwise race and fail each other's reload.
-  exec 9>/run/caddy-deploy.lock
+  exec 9>/run/lock/caddy-deploy.lock
   flock -w 120 9 || die "timed out waiting for the Caddy deploy lock"
-  systemctl restart caddy
+  as_root systemctl restart caddy
 }
 
 keep_last_releases() { # <dir> <n>
@@ -150,7 +151,9 @@ py_envname()   { if py_is_multi; then printf '/etc/%s/mcp-%s-%s.env' "$APP" "$1"
 py_write_unit() { # <name> <cmd>
   local name="$1" cmd="$2"; cmd="${cmd//\{port\}/\$PORT}"
   local vbin; vbin="$(py_root)/venv/bin"
-  cat > "/etc/systemd/system/$(py_unitname "$name")" <<UNIT
+  local unit="/etc/systemd/system/$(py_unitname "$name")"
+  if [ -f "$unit" ]; then return 0; fi
+  cat > "$unit" <<UNIT
 [Unit]
 Description=${APP} python endpoint '$name' slot %i
 After=network-online.target
@@ -169,7 +172,7 @@ User=root
 [Install]
 WantedBy=multi-user.target
 UNIT
-  systemctl daemon-reload
+  as_root systemctl daemon-reload
 }
 
 py_deploy() { # <slot>
@@ -186,8 +189,8 @@ py_deploy() { # <slot>
     printf 'PORT=%s\n' "$port" > "$(py_envname "$name" "$slot")"
     py_write_unit "$name" "$cmd"
     svc="$(py_unitname "$name")"; svc="${svc%@.service}@${slot}"
-    systemctl enable --now "$svc" >/dev/null 2>&1 || true
-    systemctl restart "$svc"
+    as_root systemctl enable --now "$svc" >/dev/null 2>&1 || true
+    as_root systemctl restart "$svc"
     log "python $APP/$name -> :$port ($svc)"
   done < <(py_endpoints)
 }
@@ -197,7 +200,7 @@ py_restart_slot() { # <slot> — restart every python endpoint unit for a slot
   while IFS=$'\t' read -r name idx cmd; do
     [ -z "$name" ] && continue
     svc="$(py_unitname "$name")"; svc="${svc%@.service}@$1"
-    systemctl restart "$svc" 2>/dev/null || true
+    as_root systemctl restart "$svc" 2>/dev/null || true
   done < <(py_endpoints)
 }
 
