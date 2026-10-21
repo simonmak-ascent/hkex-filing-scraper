@@ -60,6 +60,14 @@ health_check() { # <port> <host> [paths-json]
   log "health OK $host on :$port"
 }
 
+write_file_atomic() { # <dest> — never expose a partially-written Caddy fragment
+  local dest="$1" tmp
+  tmp="$(mktemp "${dest}.tmp.XXXXXX")"
+  cat > "$tmp"
+  chmod 644 "$tmp"
+  mv -f "$tmp" "$dest"
+}
+
 caddy_reload() {
   caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null || die "invalid Caddy config; not reloading"
   # Use `restart`, not `reload`: the admin-API reload re-inits standard modules
@@ -355,7 +363,7 @@ write_wildcard_vhost() {
     printf '\terror 404\n'
     emit_site_extras 404 403 429 502 503 504
     printf '}\n'
-  } > "$frag"
+  } | write_file_atomic "$frag"
   log "wildcard vhost written -> $frag"
 }
 
@@ -425,5 +433,5 @@ write_app_vhost() {
     printf '\t}\n'
     emit_site_extras
     printf '}\n'
-  } > "$out"
+  } | write_file_atomic "$out"
 }
