@@ -57,7 +57,7 @@ EnvironmentFile=$ENVDIR/%i.env
 ExecStart=/usr/bin/node $(mf entry 2>/dev/null || echo server.mjs)
 Restart=always
 RestartSec=5
-User=root
+User=${APP_USER}
 
 [Install]
 WantedBy=multi-user.target
