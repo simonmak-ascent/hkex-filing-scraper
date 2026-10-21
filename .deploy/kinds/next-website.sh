@@ -35,6 +35,7 @@ ensure_layout() {
 }
 
 write_unit() { # app-generic template unit; %i = slot
+  if [ -f "$UNIT_TMPL" ]; then return 0; fi
   cat > "$UNIT_TMPL" <<UNIT
 [Unit]
 Description=${APP} (Next.js standalone) slot %i
@@ -56,7 +57,7 @@ User=root
 [Install]
 WantedBy=multi-user.target
 UNIT
-  systemctl daemon-reload
+  as_root systemctl daemon-reload
 }
 
 cmd_build() {
@@ -90,8 +91,8 @@ cmd_deploy() { # <slot>
   mkdir -p "$dest" || die "could not create $dest"
   cp -a "$REPO_DIR/$artifact/." "$dest/" || die "artifact copy failed: $REPO_DIR/$artifact -> $dest"
   log "deploy $slot: restart unit ${APP}@${slot}"
-  systemctl enable --now "${APP}@${slot}" >/dev/null 2>&1 || true
-  systemctl restart "${APP}@${slot}" || die "systemctl restart ${APP}@${slot} failed"
+  as_root systemctl enable --now "${APP}@${slot}" >/dev/null 2>&1 || true
+  as_root systemctl restart "${APP}@${slot}" || die "as_root systemctl restart ${APP}@${slot} failed"
   sleep 3
   health_check "$(slot_port "$slot")" "$DOMAIN" || die "health check failed for $slot on :$(slot_port "$slot")"
   # python service (skip when this slot has no python slot, e.g. preview)
