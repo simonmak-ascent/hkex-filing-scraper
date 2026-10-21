@@ -48,7 +48,7 @@ cmd_preview() { # <ts>
     [ -n "$pyport" ] && api="$(printf '\thandle /api/* {\n\t\treverse_proxy 127.0.0.1:%s\n\t}' "$pyport")"
   fi
   local cert key; cert="$(mf tls.cert)"; key="$(mf tls.key)"
-  cat > "$PREVIEW_FRAG" <<CADDY
+  cat <<CADDY | write_file_atomic "$PREVIEW_FRAG"
 $ph {
 	encode zstd gzip
 	tls $cert $key

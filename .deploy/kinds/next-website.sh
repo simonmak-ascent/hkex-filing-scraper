@@ -124,7 +124,7 @@ cmd_preview() { # <ts>
     printf '\thandle {\n\t\treverse_proxy 127.0.0.1:%s\n\t}\n' "$(slot_port preview)"
     emit_site_extras
     printf '}\n'
-  } > "$PREVIEW_FRAG"
+  } | write_file_atomic "$PREVIEW_FRAG"
   caddy_reload
   echo "$ph"
 }
