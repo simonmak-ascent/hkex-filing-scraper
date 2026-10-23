@@ -5,6 +5,12 @@ set -euo pipefail
 : "${MANIFEST:?MANIFEST (path to apps.yaml) must be set}"
 : "${APP:?APP (app name) must be set}"
 
+# uv caches under $HOME/.cache by default, but the deploy user's HOME is not
+# writable on every app node (ecs-02/03 carry HOME=/srv/apps), which aborted
+# `uv pip install` during a fleet deploy. Pin the cache to the app root, which
+# the deploy user owns on every node.
+export UV_CACHE_DIR="${UV_CACHE_DIR:-/opt/$APP/.cache/uv}"
+
 log()  { printf '[cd%s] %s\n' "${NODE_LABEL:+:$NODE_LABEL}" "$*" >&2; }
 die()  { printf '[cd] ERROR: %s\n' "$*" >&2; exit 1; }
 as_root() { sudo -n "$@"; }
@@ -129,7 +135,7 @@ py_slot_port()  { mf "python.slots.$1"; }
 py_build() { # create/refresh the venv + install deps and the package
   local root venv req pkg; root="$(py_root)"; venv="$(py_venv)"
   log "python build ($APP): venv $venv"
-  mkdir -p "$root"
+  mkdir -p "$root" "$UV_CACHE_DIR"
   [ -x "$venv/bin/python" ] || uv venv "$venv" >/dev/null
   req="$(mf python.requirements 2>/dev/null || true)"
   if [ -n "$req" ] && [ -f "$REPO_DIR/$req" ]; then

@@ -36,7 +36,7 @@ if [ ! -x "$DIR/config.sh" ]; then
   tar -xzf /tmp/runner.tar.gz -C "$DIR"
   [ -f "$DIR/bin/installdependencies.sh" ] && "$DIR/bin/installdependencies.sh" || true
 fi
-chown -R "$RUNNER_USER:$RUNNER_USER" "$DIR"
+chown -R "$RUNNER_USER:" "$DIR"
 
 cd "$DIR"
 if [ "$RUNNER_USER" = root ]; then
