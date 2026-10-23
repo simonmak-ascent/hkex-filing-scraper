@@ -25,6 +25,15 @@ NAME="${HOSTNAME}-${LABELS}-${SLUG##*-}"
 : "${RUNNER_TOKEN:?RUNNER_TOKEN env required (repo registration token)}"
 id "$RUNNER_USER" >/dev/null 2>&1 || { echo "no such user: $RUNNER_USER" >&2; exit 1; }
 
+# The handlers elevate only a fixed set of commands, so ship the sudoers file
+# with the runner instead of leaving it as undocumented node state.
+SUDOERS_SRC="$(cd "$(dirname "$0")" && pwd)/sudoers/apg-deploy"
+if [ "$RUNNER_USER" != root ] && [ -f "$SUDOERS_SRC" ]; then
+  install -m 440 "$SUDOERS_SRC" /etc/sudoers.d/apg-deploy
+  visudo -c >/dev/null || { echo "invalid sudoers; aborting" >&2; exit 1; }
+  echo "[runner] installed /etc/sudoers.d/apg-deploy"
+fi
+
 VER="$(curl -fsSL https://api.github.com/repos/actions/runner/releases/latest \
         | python3 -c 'import json,sys;print(json.load(sys.stdin)["tag_name"].lstrip("v"))')"
 

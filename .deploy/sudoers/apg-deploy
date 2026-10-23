@@ -1,0 +1,18 @@
+# /etc/sudoers.d/apg-deploy — the only privileged calls the CD handlers make.
+#
+# Installed on every node that runs a deploy runner (see deploy/runner-bootstrap.sh
+# and docs/cd.md). The runner job runs as `deploy`; everything else it needs
+# (/srv/apps, /srv/sites, /etc/caddy/conf.d, /opt/<app>) is owned by that user.
+#
+# Both caddy paths are listed: ecs-01/03 use the distribution binary at
+# /usr/bin/caddy, ecs-02 runs the custom build at /usr/local/bin/caddy. sudo
+# matches the resolved absolute path, so a node with only one of them would fail
+# `caddy validate` with "a password is required" (seen on ecs-02, 2026-10-23).
+Defaults:deploy !requiretty
+deploy ALL=(root) NOPASSWD: /usr/bin/systemctl daemon-reload
+deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart *
+deploy ALL=(root) NOPASSWD: /usr/bin/systemctl enable --now *
+deploy ALL=(root) NOPASSWD: /usr/bin/systemctl start *
+deploy ALL=(root) NOPASSWD: /usr/bin/systemctl stop *
+deploy ALL=(root) NOPASSWD: /usr/bin/caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+deploy ALL=(root) NOPASSWD: /usr/local/bin/caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
