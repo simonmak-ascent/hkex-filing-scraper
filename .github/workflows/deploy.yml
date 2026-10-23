@@ -3,6 +3,12 @@ name: deploy
 # and this repo's supply-chain policy forbids unpinned or locally-referenced
 # workflows, so the reusable app-cd steps are inlined here with a SHA-pinned
 # checkout and a read-only top-level token.
+#
+# Multi-node: `.deploy/apps.yaml` gives hkex-listco-updates `nodes:
+# [ecs-01, ecs-02, ecs-03]`. `plan` picks the target slot once, on the primary
+# node; `cd` runs one job per node on that node's runner with DEPLOY_NODE set,
+# so every node builds, deploys and switches the SAME slot. A failing node rolls
+# the whole fleet back to the slot each node ran before the deploy.
 on:
   # Pull requests are validated on GitHub-hosted runners by ci.yml.
   # Never execute pull-request code on the self-hosted deploy runner.
@@ -13,41 +19,70 @@ permissions:
 concurrency:
   group: app-cd-hkex-listco-updates
   cancel-in-progress: false
+env:
+  MANIFEST: ${{ github.workspace }}/.deploy/apps.yaml
+  APP: hkex-listco-updates
+  REPO_DIR: ${{ github.workspace }}
+  KIND_DIR: ${{ github.workspace }}/.deploy/kinds
 jobs:
-  cd:
+  plan:
     runs-on: [self-hosted, linux, x64, apg-ecs-01]
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      slot: ${{ steps.plan.outputs.slot }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Resolve fleet and target slot
+        id: plan
+        run: |
+          MATRIX=$(python3 -c "import json,sys,yaml;d=yaml.safe_load(open('$MANIFEST'));a={x['name']:x for x in d['apps']}['$APP'];nodes=a.get('nodes') or [a['node']];print(json.dumps([{'node':n,'runner':d['nodes'][n]['runner'][-1]} for n in nodes]))")
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          CUR=$(cat "/srv/apps/$APP/active-slot" 2>/dev/null || echo blue)
+          [ "$CUR" = blue ] && NEXT=green || NEXT=blue
+          echo "slot=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "fleet=$MATRIX target slot=$NEXT (was $CUR)" >> "$GITHUB_STEP_SUMMARY"
+  cd:
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: [self-hosted, linux, x64, "${{ matrix.runner }}"]
     env:
-      MANIFEST: ${{ github.workspace }}/.deploy/apps.yaml
-      APP: hkex-listco-updates
-      REPO_DIR: ${{ github.workspace }}
-      KIND_DIR: ${{ github.workspace }}/.deploy/kinds
+      DEPLOY_NODE: ${{ matrix.node }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Resolve kind
         id: kind
-        run: echo "kind=$(python3 -c "import yaml;d=yaml.safe_load(open('$MANIFEST'));print({a['name']:a['kind'] for a in d['apps']}['$APP'])")" >> "$GITHUB_OUTPUT"
+        run: |
+          KIND=$(python3 -c "import yaml;d=yaml.safe_load(open('$MANIFEST'));print({a['name']:a['kind'] for a in d['apps']}['$APP'])")
+          echo "kind=$KIND" >> "$GITHUB_OUTPUT"
       - name: Build
         run: bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" build
-      - name: Preview (PR)
-        if: github.event_name == 'pull_request'
-        id: preview
+      - name: Deploy inactive slot
+        run: bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" deploy "${{ needs.plan.outputs.slot }}"
+      - name: Switch + smoke
         run: |
-          host=$(bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" preview "$(date -u +%Y%m%dT%H%M%S)" | tail -1)
-          echo "host=$host" >> "$GITHUB_OUTPUT"
-          echo "Preview ($APP): https://$host" >> "$GITHUB_STEP_SUMMARY"
-      - name: Deploy inactive slot (main)
-        if: github.event_name == 'push'
-        id: deploy
-        run: |
-          CUR=$(cat "/srv/apps/$APP/active-slot" 2>/dev/null || echo blue)
-          [ "$CUR" = blue ] && NEXT=green || NEXT=blue
-          echo "slot=$NEXT" >> "$GITHUB_OUTPUT"
-          bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" deploy "$NEXT"
-      - name: Switch + smoke (main)
-        if: github.event_name == 'push'
-        run: |
-          bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" switch "${{ steps.deploy.outputs.slot }}"
+          bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" switch "${{ needs.plan.outputs.slot }}"
           bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" smoke
-      - name: Rollback on failure (main)
-        if: failure() && github.event_name == 'push'
-        run: bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" rollback
+  # A half-deployed fleet is worse than an old release everywhere: if any node
+  # failed, every node returns to the slot it ran before this deploy.
+  rollback:
+    needs: [plan, cd]
+    if: failure()
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: [self-hosted, linux, x64, "${{ matrix.runner }}"]
+    env:
+      DEPLOY_NODE: ${{ matrix.node }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Resolve kind
+        id: kind
+        run: |
+          KIND=$(python3 -c "import yaml;d=yaml.safe_load(open('$MANIFEST'));print({a['name']:a['kind'] for a in d['apps']}['$APP'])")
+          echo "kind=$KIND" >> "$GITHUB_OUTPUT"
+      - name: Roll back
+        run: bash "$KIND_DIR/${{ steps.kind.outputs.kind }}.sh" rollback "${{ needs.plan.outputs.slot }}"

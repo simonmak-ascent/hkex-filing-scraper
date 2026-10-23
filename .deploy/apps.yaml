@@ -15,6 +15,20 @@ nodes:
     # deploy root for app releases/slots on this node
     srv_root: /srv/apps
     caddy_conf_dir: /etc/caddy/conf.d
+  # Standby app nodes. Private only — the ALB is the public entry. A handler run
+  # with DEPLOY_NODE=ecs-02 writes that node's own slots and Caddy fragment.
+  ecs-02:
+    host: ecs-02
+    private_ip: 10.20.22.137
+    runner: [self-hosted, linux, x64, apg-ecs-02]
+    srv_root: /srv/apps
+    caddy_conf_dir: /etc/caddy/conf.d
+  ecs-03:
+    host: ecs-03
+    private_ip: 10.20.23.30
+    runner: [self-hosted, linux, x64, apg-ecs-03]
+    srv_root: /srv/apps
+    caddy_conf_dir: /etc/caddy/conf.d
 
 apps:
   # ── Production website (the only box-deployed production app today) ──
@@ -119,7 +133,10 @@ apps:
 
   - name: hkex-listco-updates
     repo: simonmak-ascent/hkex-filing-scraper
+    # `node` is the primary (preview builds); `nodes` is the serving fleet — one CD
+    # job per node, all switching to the same slot.
     node: ecs-01
+    nodes: [ecs-01, ecs-02, ecs-03]
     kind: static
     domain: hkex-listco-updates.ascent-partners.com
     geo: false
@@ -131,6 +148,7 @@ apps:
       slots: { blue: 8040, green: 8041 }
       package: "."
       cmd: "python wsgilaunch.py --app api.mcp:app --health api.healthz:app --port {port}"
+      health: /api/health
     docs: { build: "mkdocs build --strict && python3 scripts/build_llms.py", dir: site }
 
   # ── coso-mcp: Node MCP service (COSO internal-control review). Vercel → ecs-01.
