@@ -138,6 +138,7 @@ apps:
     node: ecs-01
     nodes: [ecs-01, ecs-02, ecs-03]
     kind: static
+    geo_mode: trusted_proxies
     domain: hkex-listco-updates.ascent-partners.com
     geo: false
     preview_host: "preview-hkex-{{ts}}.ascent-partners.com"
