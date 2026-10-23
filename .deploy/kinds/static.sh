@@ -38,12 +38,19 @@ cmd_deploy() { # <slot>  (static: publish docs; python slot optional)
 # A candidate slot must answer on its own port before traffic moves to it, so a
 # broken release fails the deploy instead of taking the node down.
 cmd_health() { # <slot>
-  local slot="$1" port code
+  local slot="$1" port code i
   [ -f "/srv/sites/$APP/docs/index.html" ] || die "docs not published at /srv/sites/$APP/docs"
   if py_has; then
     port="$(py_slot_port "$slot")"
-    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "http://127.0.0.1:${port}${PY_HEALTH_PATH}" || echo 000)"
-    [ "$code" = "200" ] || die "health FAIL python :$port$PY_HEALTH_PATH -> $code"
+    # `py_deploy` restarts the slot, and a WSGI app needs a moment to bind; poll
+    # instead of failing on the first connection refused.
+    code=000
+    for i in $(seq 1 15); do
+      code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://127.0.0.1:${port}${PY_HEALTH_PATH}" || echo 000)"
+      [ "$code" = "200" ] && break
+      sleep 2
+    done
+    [ "$code" = "200" ] || die "health FAIL python :$port$PY_HEALTH_PATH -> $code after 30s"
     log "health OK python :$port$PY_HEALTH_PATH"
   fi
   log "health OK docs $APP"
