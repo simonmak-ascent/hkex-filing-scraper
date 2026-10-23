@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Fail when a production dependency carries a disallowed licence."""
+
 import json
 import re
 import sys
@@ -27,9 +28,10 @@ def denied(expr: str) -> bool:
 
 
 def main(path: str) -> int:
-    data = json.load(open(path, encoding="utf-8"))
+    with open(path, encoding="utf-8") as handle:
+        data = json.load(handle)
     if not isinstance(data, list):
-        print(f"{path}: expected a pip-licenses list", file=sys.stderr)
+        sys.stderr.write(f"{path}: expected a pip-licenses list\n")
         return 2
     denied_rows = []
     notices = []
@@ -41,13 +43,13 @@ def main(path: str) -> int:
         elif NOTICE.search(licence):
             notices.append(f"{licence}: {name}")
     for line in notices:
-        print(f"notice: {line}")
+        sys.stdout.write(f"notice: {line}\n")
     if denied_rows:
-        print("Disallowed production licences:", file=sys.stderr)
+        sys.stderr.write("Disallowed production licences:\n")
         for line in denied_rows:
-            print(f"  {line}", file=sys.stderr)
+            sys.stderr.write(f"  {line}\n")
         return 1
-    print(f"license policy OK ({len(data)} packages)")
+    sys.stdout.write(f"license policy OK ({len(data)} packages)\n")
     return 0
 
 
