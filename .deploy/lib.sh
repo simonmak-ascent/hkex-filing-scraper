@@ -5,7 +5,7 @@ set -euo pipefail
 : "${MANIFEST:?MANIFEST (path to apps.yaml) must be set}"
 : "${APP:?APP (app name) must be set}"
 
-log()  { printf '[cd] %s\n' "$*" >&2; }
+log()  { printf '[cd%s] %s\n' "${NODE_LABEL:+:$NODE_LABEL}" "$*" >&2; }
 die()  { printf '[cd] ERROR: %s\n' "$*" >&2; exit 1; }
 as_root() { sudo -n "$@"; }
 LAUNCHERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/launchers"
@@ -26,31 +26,56 @@ print("true" if v is True else "false" if v is False else (__import__("json").du
 PY
 }
 
-# mf_node <dot path>  ->  value from this app's node entry
+# mf_node <dot path>  ->  value from the node this run targets.
+# The node is DEPLOY_NODE when set (one CI job per node), otherwise the app's
+# `node:` key. `nodes:<list>` only describes the fleet; a handler still runs on
+# one node and writes that node's own paths.
 mf_node() {
-  python3 - "$MANIFEST" "$APP" "$1" <<'PY'
+  python3 - "$MANIFEST" "$APP" "$1" "${DEPLOY_NODE:-}" <<'PY'
 import sys, yaml
-mf, app, path = sys.argv[1], sys.argv[2], sys.argv[3]
+mf, app, path, override = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 d = yaml.safe_load(open(mf))
 a = {x["name"]: x for x in d["apps"]}[app]
-n = d["nodes"][a["node"]]
-v = n
+node = override or a["node"]
+if node not in d["nodes"]:
+    sys.exit(f"node '{node}' not in manifest nodes")
+v = d["nodes"][node]
 for k in path.split("."):
     v = v[k]
 print("true" if v is True else "false" if v is False else (__import__("json").dumps(v) if isinstance(v, (list, dict)) else v))
 PY
 }
 
+# mf_nodes -> JSON array of the nodes this app is deployed to (defaults to [node])
+mf_nodes() {
+  python3 - "$MANIFEST" "$APP" <<'PY'
+import json,sys,yaml
+mf, app = sys.argv[1], sys.argv[2]
+a = {x["name"]: x for x in yaml.safe_load(open(mf))["apps"]}[app]
+print(json.dumps(a.get("nodes") or [a["node"]]))
+PY
+}
+
 APP_USER="${APP_USER:-deploy}"
-APP_NODE="$(mf node)"
+APP_NODE="${DEPLOY_NODE:-$(mf node)}"
+APP_NODES="$(mf_nodes)"
+NODE_LABEL="$APP_NODE"
 SRV_ROOT="$(mf_node srv_root)"
 APP_ROOT="$SRV_ROOT/$APP"
+PREV_FILE="$APP_ROOT/previous-slot"     # slot that was live before the current deploy
 CADDY_CONF_DIR="$(mf_node caddy_conf_dir)"
 DOMAIN="$(mf domain)"
 HEALTH_PATHS="$(mf health)"            # JSON array
 KEEP_RELEASES="$(mf keep_releases 2>/dev/null || echo 3)"
 
 slot_port() { mf "slots.$1"; }
+
+active_slot() { cat "$APP_ROOT/active-slot" 2>/dev/null || echo blue; }
+other_slot()  { [ "$1" = blue ] && echo green || echo blue; }
+# Record the slot that was live before this deploy, so a rollback returns to it
+# even when the switch itself failed half-way.
+remember_slot() { mkdir -p "$APP_ROOT"; printf '%s\n' "$1" > "$PREV_FILE"; }
+previous_slot() { cat "$PREV_FILE" 2>/dev/null || true; }
 
 health_check() { # <port> <host> [paths-json]
   local port="$1" host="$2" paths="${3:-$HEALTH_PATHS}" p
