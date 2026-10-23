@@ -95,9 +95,15 @@ CADDY
 }
 
 cmd_rollback() { # [failed-slot] — return to the slot recorded before the deploy
-  local target
-  target="$(previous_slot)"
-  if [ -n "${1:-}" ]; then target="$(other_slot "$1")"; fi
+  local target=""
+  if [ -n "${1:-}" ]; then
+    # Explicit failed slot: the pass that was being switched to never went live,
+    # so the previous slot is simply the other one (works even when the deploy
+    # job failed before it could record previous-slot).
+    target="$(other_slot "$1")"
+  else
+    target="$(previous_slot)"
+  fi
   [ -n "$target" ] || die "rollback: no previous slot recorded"
   # A node that never ran the previous slot (first deploy after joining the
   # fleet) has nothing to go back to; keep whatever is live rather than point
