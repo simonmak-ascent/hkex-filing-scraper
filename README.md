@@ -316,6 +316,8 @@ Tests are pure unit tests; SQLite and DuckDB contract tests run in-process, and 
 tests that need a server are skipped unless that sink is configured. See
 [Testing](docs/testing.md).
 
+CI and deployment run through the APG workbench pipeline.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md); report security issues per [SECURITY.md](SECURITY.md).
