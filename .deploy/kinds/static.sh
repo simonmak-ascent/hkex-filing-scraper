@@ -124,14 +124,27 @@ cmd_rollback() { # [failed-slot] — return to the slot recorded before the depl
   log "rolled back to $target"
 }
 
+# probe_8080 <path>  ->  last HTTP status, polling while Caddy restarts
+# `switch` restarts Caddy immediately before smoke runs, and the legacy :8080
+# listener takes a moment to bind again; a single shot returned 502 on ecs-02.
+probe_8080() {
+  local path="$1" code=000 i
+  for i in $(seq 1 10); do
+    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 -H "Host: $DOMAIN" "http://127.0.0.1:8080${path}" || echo 000)"
+    [ "$code" = "200" ] && break
+    sleep 2
+  done
+  printf '%s' "$code"
+}
+
 cmd_smoke() {
   local slot port code
   slot="$(active_slot)"
-  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 -H "Host: $DOMAIN" "http://127.0.0.1:8080/docs/" || echo 000)"
-  [ "$code" = "200" ] || die "smoke FAIL $DOMAIN/docs/ on :8080 -> $code"
+  code="$(probe_8080 /docs/)"
+  [ "$code" = "200" ] || die "smoke FAIL $DOMAIN/docs/ on :8080 -> $code after 20s"
   if py_has; then
     port="$(py_slot_port "$slot")"
-    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 -H "Host: $DOMAIN" "http://127.0.0.1:8080${PY_HEALTH_PATH}" || echo 000)"
+    code="$(probe_8080 "$PY_HEALTH_PATH")"
     [ "$code" = "200" ] || die "smoke FAIL $DOMAIN$PY_HEALTH_PATH via :8080 -> $code (slot $slot :$port)"
   fi
   log "smoke OK $DOMAIN (/docs/ + api) on :8080 (slot $slot)"
