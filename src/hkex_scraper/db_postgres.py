@@ -307,9 +307,21 @@ def initialize_postgres_schema() -> Tuple[bool, str]:
         return False, ERR_DRIVER_MISSING
     if not postgres_conninfo():
         return False, ERR_DSN_MISSING
+
+    # On an already-initialised database these statements are no-ops, but
+    # PostgreSQL authorises CREATE INDEX against the table owner before it
+    # honours IF NOT EXISTS. A producer that holds only DML grants (the RDS
+    # restore left exchange_filing owned by svc_admin) must not fail the whole
+    # scrape for that: the run reads and writes data, it does not manage the
+    # schema.
+    schema_ready = _run("SELECT 1 FROM exchange_filing LIMIT 1")[0]
+
     for statement in _build_postgres_schema_sql():
         ok, code, _ = _run(statement)
         if not ok:
+            if schema_ready and "must be owner of" in (code or "").lower():
+                log("  PostgreSQL schema already present; skipped DDL that needs table ownership")
+                continue
             return False, code or ERR_SCHEMA_ERROR
     return True, ERR_NONE
 

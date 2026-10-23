@@ -249,6 +249,36 @@ class TestGracefulDegradation:
         assert code == db_postgres.ERR_DRIVER_MISSING
         # No exception raised anywhere above.
 
+    def test_existing_schema_tolerates_ddl_that_needs_ownership(self, monkeypatch):
+        # RDS restore left exchange_filing owned by svc_admin; the producer has
+        # DML only, so CREATE INDEX fails even with IF NOT EXISTS. The schema is
+        # already there, so the scrape must proceed.
+        monkeypatch.setattr(db_postgres, "_PSYCOPG_AVAILABLE", True)
+        monkeypatch.setattr(db_postgres, "postgres_conninfo", lambda: "postgresql://x")
+
+        def fake_run(sql, params=None, many=False):
+            if sql.strip().startswith("SELECT 1 FROM exchange_filing"):
+                return True, "", 0
+            return False, "must be owner of table exchange_filing", 0
+
+        monkeypatch.setattr(db_postgres, "_run", fake_run)
+        ok, code = db_postgres.initialize_postgres_schema()
+        assert (ok, code) == (True, db_postgres.ERR_NONE)
+
+    def test_missing_schema_still_fails_on_ddl_error(self, monkeypatch):
+        monkeypatch.setattr(db_postgres, "_PSYCOPG_AVAILABLE", True)
+        monkeypatch.setattr(db_postgres, "postgres_conninfo", lambda: "postgresql://x")
+
+        def fake_run(sql, params=None, many=False):
+            if sql.strip().startswith("SELECT 1 FROM exchange_filing"):
+                return False, "relation exchange_filing does not exist", 0
+            return False, "must be owner of table exchange_filing", 0
+
+        monkeypatch.setattr(db_postgres, "_run", fake_run)
+        ok, code = db_postgres.initialize_postgres_schema()
+        assert ok is False
+        assert code == "must be owner of table exchange_filing"
+
     def test_dsn_missing_degrades(self, monkeypatch):
         monkeypatch.setattr(db_postgres, "_PSYCOPG_AVAILABLE", True)
         monkeypatch.setattr(db_postgres, "postgres_conninfo", lambda: "")
