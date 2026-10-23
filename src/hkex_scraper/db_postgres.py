@@ -320,10 +320,7 @@ def initialize_postgres_schema() -> Tuple[bool, str]:
         ok, code, _ = _run(statement)
         if not ok:
             if schema_ready and "must be owner of" in (code or "").lower():
-                log(
-                    "  PostgreSQL schema already present; skipped DDL that needs "
-                    "table ownership"
-                )
+                log("  PostgreSQL schema already present; skipped DDL that needs table ownership")
                 continue
             return False, code or ERR_SCHEMA_ERROR
     return True, ERR_NONE
