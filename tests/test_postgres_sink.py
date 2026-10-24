@@ -21,6 +21,10 @@ class TestSchemaDdl:
         statements = db_postgres._build_postgres_schema_sql()
         assert statements
         for stmt in statements:
+            # A role-guarded GRANT is re-runnable by nature (GRANT is idempotent); it
+            # cannot carry IF NOT EXISTS, so it is the one exempt shape.
+            if stmt.lstrip().startswith("DO $$") and "GRANT" in stmt:
+                continue
             assert "IF NOT EXISTS" in stmt, stmt[:120]
         joined = "\n".join(statements)
         for table in (
@@ -32,6 +36,7 @@ class TestSchemaDdl:
             assert f"TABLE IF NOT EXISTS {table}" in joined
         for column in ("filing_id", "document_text", "document_tables", "company_ticker"):
             assert column in joined
+        assert "GRANT SELECT ON scraper_heartbeat" in joined
         for index in (
             "idx_pg_ef_ticker",
             "idx_pg_ef_docstatus",
