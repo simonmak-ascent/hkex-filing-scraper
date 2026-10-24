@@ -15,11 +15,13 @@ from __future__ import annotations
 
 import re
 import threading
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from .config import (
     POSTGRES_FTS_INDEX,
+    SCRAPER_HEARTBEAT_FILE,
     SCRAPE_LOCK_KEY,
     POSTGRES_MAX_POOL,
     POSTGRES_MIN_POOL,
@@ -197,12 +199,27 @@ def release_scrape_lock() -> None:
             _lock_conn = None
 
 
+def _write_heartbeat_file(phase: str, detail: str) -> None:
+    """Best-effort timestamp file for the watchdog, which has no database client."""
+    if not SCRAPER_HEARTBEAT_FILE:
+        return
+    try:
+        path = Path(SCRAPER_HEARTBEAT_FILE)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        path.write_text(f"{stamp} {phase} {detail}".rstrip() + "\n", encoding="utf-8")
+    except Exception:  # noqa: BLE001 - telemetry must not break the run
+        pass
+
+
 def write_heartbeat(run_id: str, phase: str, detail: str = "") -> Tuple[bool, str]:
     """Record what this run is doing, so a hung run is visible to the watchdog.
 
     One row, upserted in place. Deliberately best-effort: a heartbeat failure must
     never fail a scrape.
     """
+    _write_heartbeat_file(phase, detail)
+
     if not postgres_available():
         return False, ERR_DRIVER_MISSING
     try:
@@ -378,6 +395,16 @@ def _build_postgres_schema_sql() -> List[str]:
             " detail text,"
             " updated_at timestamptz NOT NULL DEFAULT now()"
             ")"
+        ),
+        (
+            "DO $$ BEGIN"
+            " IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'grp_sender') THEN"
+            " EXECUTE 'GRANT SELECT ON scraper_heartbeat TO grp_sender';"
+            " END IF;"
+            " IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'grp_tracker') THEN"
+            " EXECUTE 'GRANT SELECT ON scraper_heartbeat TO grp_tracker';"
+            " END IF;"
+            " END $$"
         ),
         (
             "CREATE TABLE IF NOT EXISTS references_filing ("

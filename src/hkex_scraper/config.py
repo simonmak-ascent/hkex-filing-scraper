@@ -267,6 +267,13 @@ SCRAPE_LOCK_ENABLED: bool = os.environ.get("SCRAPER_LOCK", "1").strip().lower() 
     "no",
 }
 
+#: Timestamp file written on every heartbeat. The watchdog reads this rather than the
+#: database, because it deliberately depends on nothing but coreutils; set it to an
+#: empty string to disable the file.
+SCRAPER_HEARTBEAT_FILE: str = os.environ.get(
+    "SCRAPER_HEARTBEAT_FILE", "/var/lib/hkex-scraper/heartbeat"
+)
+
 # ---------------------------------------------------------------------------
 # HKEx API
 # ---------------------------------------------------------------------------

@@ -133,3 +133,27 @@ def test_heartbeat_reports_a_missing_driver(monkeypatch):
 
     assert ok is False
     assert code == db_postgres.ERR_DRIVER_MISSING
+
+def test_heartbeat_writes_a_timestamp_file_for_the_watchdog(monkeypatch, tmp_path):
+    """The watchdog has no database client, so the phase must also reach a file."""
+    target = tmp_path / "hb" / "heartbeat"
+    monkeypatch.setattr(db_postgres, "SCRAPER_HEARTBEAT_FILE", str(target))
+    monkeypatch.setattr(db_postgres, "postgres_available", lambda: False)
+
+    ok, _ = db_postgres.write_heartbeat("run-1", "metadata", "7423 filings")
+
+    assert ok is False  # no driver, but the file is still written
+    body = target.read_text(encoding="utf-8").strip()
+    assert "metadata" in body
+    assert "7423 filings" in body
+    assert body.endswith("metadata 7423 filings")
+
+
+def test_heartbeat_file_is_optional(monkeypatch):
+    monkeypatch.setattr(db_postgres, "SCRAPER_HEARTBEAT_FILE", "")
+    monkeypatch.setattr(db_postgres, "postgres_available", lambda: False)
+
+    ok, code = db_postgres.write_heartbeat("run-1", "start")
+
+    assert ok is False
+    assert code == db_postgres.ERR_DRIVER_MISSING
