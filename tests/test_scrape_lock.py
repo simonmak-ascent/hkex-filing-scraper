@@ -185,6 +185,9 @@ def test_prune_coverage_reports_the_deleted_rows(monkeypatch):
             self.params = params
 
     class _Conn:
+        def connection(self):
+            return self
+
         def __enter__(self):
             return self
 
