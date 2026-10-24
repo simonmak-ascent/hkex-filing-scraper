@@ -453,10 +453,7 @@ def run_phase1(
         if chunk_filings_new:
             chunk_saved = _save_now(chunk_filings_new)
             total_saved += chunk_saved
-            log(
-                f"  Saved {chunk_saved} filings "
-                f"({total_saved} this run, {len(saved_ids)} unique)"
-            )
+            log(f"  Saved {chunk_saved} filings ({total_saved} this run, {len(saved_ids)} unique)")
 
         if api_total is not None and api_total > 0:
             pct = (chunk_new / api_total) * 100

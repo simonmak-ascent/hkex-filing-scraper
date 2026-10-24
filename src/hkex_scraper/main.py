@@ -441,7 +441,9 @@ def main() -> None:
                 write_heartbeat(run_id, "metadata", f"{total} filings saved")
                 pruned_ok, pruned = prune_coverage()
                 if pruned_ok and pruned:
-                    log(f"Pruned {pruned} coverage rows older than {config.COVERAGE_RETENTION_DAYS} days")
+                    log(
+                        f"Pruned {pruned} coverage rows older than {config.COVERAGE_RETENTION_DAYS} days"
+                    )
 
             if not args.dry_run and total > 0:
                 if args.no_link:
