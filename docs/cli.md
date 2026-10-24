@@ -40,6 +40,7 @@ hkex-scraper [options]
 | `CHUNK_DEADLINE_SECONDS` | `300` | Hard ceiling for one date chunk. A chunk that exceeds it is logged as skipped and the run continues. |
 | `LINK_TIMEOUT_SECONDS` | `300` | Hard ceiling for the graph phase; the edges are rebuilt on the next `--link-only` run. |
 | `REQUEST_DELAY_SECONDS` | `0` | Minimum gap between request starts, process-wide. Raise it to be politer to HKEX. |
+
 - `--coverage-report`, `--parity-report`, and `--verify` are read-only reports that exit after printing.
 - A `--limit` also caps the number of documents Phase 2 processes.
 
