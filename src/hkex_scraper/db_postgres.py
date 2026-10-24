@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .config import (
     POSTGRES_FTS_INDEX,
+    SCRAPE_LOCK_KEY,
     POSTGRES_MAX_POOL,
     POSTGRES_MIN_POOL,
     POSTGRES_SCHEMA,
@@ -136,6 +137,88 @@ def _get_pool():  # pragma: no cover - requires a live driver
                     kwargs["kwargs"] = {"options": f"-c search_path={schema}"}
                 _pool = ConnectionPool(conninfo=conninfo, **kwargs)
     return _pool
+
+
+# ---------------------------------------------------------------------------
+# Single-producer lock and heartbeat
+# ---------------------------------------------------------------------------
+
+#: Held for the lifetime of the process; a session-level advisory lock dies with it.
+_lock_conn = None
+_lock_guard = threading.Lock()
+
+
+def try_acquire_scrape_lock() -> Tuple[bool, str]:
+    """Take the corpus scrape lock.
+
+    Returns ``(held, detail)``. A False result means another node is scraping: the
+    caller should exit quietly, because the corpus is idempotent and the other run
+    will ingest the same filings. When the driver or the database is unavailable the
+    lock degrades to "held" — a missing lock must not stop a scrape that would
+    otherwise work.
+    """
+    global _lock_conn
+    if not postgres_available():
+        return True, "postgres driver unavailable; lock skipped"
+    with _lock_guard:
+        if _lock_conn is not None:
+            return True, "already held by this process"
+        try:
+            conn = psycopg.connect(postgres_conninfo(), autocommit=True)
+            with conn.cursor() as cur:
+                cur.execute("SELECT pg_try_advisory_lock(%s)", (SCRAPE_LOCK_KEY,))
+                row = cur.fetchone()
+            if not (row and row[0]):
+                conn.close()
+                return False, "another producer holds the scrape lock"
+            _lock_conn = conn
+            return True, "locked"
+        except Exception as exc:  # noqa: BLE001 - never block a scrape on the lock
+            log(f"  WARNING: scrape lock unavailable ({type(exc).__name__}); continuing unlocked")
+            return True, f"lock unavailable: {type(exc).__name__}"
+
+
+def release_scrape_lock() -> None:
+    """Release the scrape lock (idempotent)."""
+    global _lock_conn
+    with _lock_guard:
+        if _lock_conn is None:
+            return
+        try:
+            with _lock_conn.cursor() as cur:
+                cur.execute("SELECT pg_advisory_unlock(%s)", (SCRAPE_LOCK_KEY,))
+        except Exception:  # noqa: BLE001 - closing the connection releases it anyway
+            pass
+        finally:
+            try:
+                _lock_conn.close()
+            except Exception:  # noqa: BLE001
+                pass
+            _lock_conn = None
+
+
+def write_heartbeat(run_id: str, phase: str, detail: str = "") -> Tuple[bool, str]:
+    """Record what this run is doing, so a hung run is visible to the watchdog.
+
+    One row, upserted in place. Deliberately best-effort: a heartbeat failure must
+    never fail a scrape.
+    """
+    if not postgres_available():
+        return False, ERR_DRIVER_MISSING
+    try:
+        with _get_pool().connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO scraper_heartbeat (id, run_id, phase, detail, updated_at)"
+                    " VALUES (1, %s, %s, %s, now())"
+                    " ON CONFLICT (id) DO UPDATE SET"
+                    " run_id = EXCLUDED.run_id, phase = EXCLUDED.phase,"
+                    " detail = EXCLUDED.detail, updated_at = now()",
+                    (run_id, phase, detail or None),
+                )
+        return True, ""
+    except Exception as exc:  # noqa: BLE001 - telemetry must not break the run
+        return False, f"{type(exc).__name__}: {exc}"
 
 
 def close_pool() -> None:
@@ -285,6 +368,15 @@ def _build_postgres_schema_sql() -> List[str]:
             " filing_id text NOT NULL REFERENCES exchange_filing(filing_id) ON DELETE CASCADE,"
             " created_at timestamptz NOT NULL DEFAULT now(),"
             " PRIMARY KEY (company_id, filing_id)"
+            ")"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS scraper_heartbeat ("
+            " id integer PRIMARY KEY DEFAULT 1 CHECK (id = 1),"
+            " run_id text NOT NULL,"
+            " phase text NOT NULL,"
+            " detail text,"
+            " updated_at timestamptz NOT NULL DEFAULT now()"
             ")"
         ),
         (

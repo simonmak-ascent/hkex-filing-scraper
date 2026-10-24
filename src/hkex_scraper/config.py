@@ -254,6 +254,20 @@ CHUNK_DEADLINE_SECONDS: int = int(os.environ.get("CHUNK_DEADLINE_SECONDS", "300"
 LINK_TIMEOUT_SECONDS: int = int(os.environ.get("LINK_TIMEOUT_SECONDS", "300"))
 
 # ---------------------------------------------------------------------------
+# Single-producer coordination
+# ---------------------------------------------------------------------------
+#: Session-level advisory lock key. Only the holder scrapes; other nodes stay idle,
+#: so running the same unit on 01/02/03 cannot double-load HKEx or duplicate
+#: coverage rows. Distinct from the tracker's DDL lock.
+SCRAPE_LOCK_KEY: int = int(os.environ.get("SCRAPE_LOCK_KEY", "917231002"))
+#: Set ``SCRAPER_LOCK=0`` for a one-off manual run that must not wait for the lock.
+SCRAPE_LOCK_ENABLED: bool = os.environ.get("SCRAPER_LOCK", "1").strip().lower() not in {
+    "0",
+    "false",
+    "no",
+}
+
+# ---------------------------------------------------------------------------
 # HKEx API
 # ---------------------------------------------------------------------------
 HKEX_BASE_URL: str = "https://www1.hkexnews.hk"

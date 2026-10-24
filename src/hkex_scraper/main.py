@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Tuple
 
 from . import __version__, config, sinks
 from .config import LINK_TIMEOUT_SECONDS, LOG_DIR, MAX_DOWNLOAD_WORKERS
+from .db_postgres import release_scrape_lock, try_acquire_scrape_lock, write_heartbeat
 from .extractor import check_dependencies
 from .graph import cross_reference_filings, link_filings_to_companies
 from .pipeline import (
@@ -386,6 +387,17 @@ def main() -> None:
 
         _init_schemas()
 
+        # One producer at a time. The corpus is idempotent, so a second node simply
+        # stands down; running both would double-load HKEx and duplicate coverage rows.
+        run_id = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        if config.SCRAPE_LOCK_ENABLED and not args.dry_run and "postgres" in config.sink_ids():
+            held, detail = try_acquire_scrape_lock()
+            log(f"Scrape lock: {detail}")
+            if not held:
+                log("Another producer is scraping this corpus; exiting without doing work.")
+                sys.exit(0)
+            write_heartbeat(run_id, "start")
+
         if args.parity_report:
             _parity_report()
 
@@ -420,6 +432,9 @@ def main() -> None:
                 date_to=args.to_date,
                 full_history=args.full_history,
             )
+            if not args.dry_run:
+                write_heartbeat(run_id, "metadata", f"{total} filings saved")
+
             if not args.dry_run and total > 0:
                 if args.no_link:
                     log("")
@@ -429,6 +444,7 @@ def main() -> None:
 
                 # Phase 2: download documents (default unless --metadata-only)
                 if not args.metadata_only:
+                    write_heartbeat(run_id, "documents")
                     log("Proceeding to Phase 2: Document download & text extraction...")
                     log("")
                     run_phase2(
@@ -441,6 +457,8 @@ def main() -> None:
                     log("Run again with --backfill-docs to download documents later.")
                     log("")
 
+        if not args.dry_run:
+            write_heartbeat(run_id, "complete")
         log_sink_summary()
         log("=" * 60)
         log("COMPLETE")
@@ -451,6 +469,7 @@ def main() -> None:
             log("ERROR: one or more sink writes failed (see sink summary above)")
         sys.exit(exit_code)
     finally:
+        release_scrape_lock()
         close_log_file()
         sinks.close_all()
 
