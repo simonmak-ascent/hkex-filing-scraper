@@ -159,3 +159,47 @@ def test_heartbeat_file_is_optional(monkeypatch):
 
     assert ok is False
     assert code == db_postgres.ERR_DRIVER_MISSING
+
+
+def test_prune_coverage_is_a_no_op_without_a_driver(monkeypatch):
+    monkeypatch.setattr(db_postgres, "postgres_available", lambda: False)
+
+    ok, deleted = db_postgres.prune_coverage(180)
+
+    assert ok is False
+    assert deleted == 0
+
+
+def test_prune_coverage_reports_the_deleted_rows(monkeypatch):
+    class _Cursor:
+        rowcount = 12
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def execute(self, sql, params=None):
+            self.sql = sql
+            self.params = params
+
+    class _Conn:
+        def connection(self):
+            return self
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def cursor(self):
+            return _Cursor()
+
+    monkeypatch.setattr(db_postgres, "_get_pool", lambda: _Conn())
+
+    ok, deleted = db_postgres.prune_coverage(180)
+
+    assert ok is True
+    assert deleted == 12
