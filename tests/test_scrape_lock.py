@@ -8,6 +8,8 @@ broken lock never blocks a scrape.
 
 from __future__ import annotations
 
+import types
+
 import pytest
 
 from hkex_scraper import db_postgres
@@ -47,9 +49,15 @@ class FakeConnection:
 
 
 @pytest.fixture(autouse=True)
-def reset_lock_state(monkeypatch):
-    monkeypatch.setattr(db_postgres, "_lock_conn", None)
+def fake_driver(monkeypatch):
+    """Pretend the optional driver is installed.
+
+    CI runs the unit suite without the ``postgres`` extra, so ``db_postgres.psycopg``
+    is ``None`` there; the tests replace it with a stand-in module.
+    """
+    monkeypatch.setattr(db_postgres, "psycopg", types.SimpleNamespace(connect=None))
     monkeypatch.setattr(db_postgres, "postgres_available", lambda: True)
+    monkeypatch.setattr(db_postgres, "_lock_conn", None)
     yield
     monkeypatch.setattr(db_postgres, "_lock_conn", None)
 
