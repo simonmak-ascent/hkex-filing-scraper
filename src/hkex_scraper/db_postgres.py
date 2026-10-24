@@ -504,6 +504,30 @@ def _trgm_schema() -> str:
     return name if _SCHEMA_RE.match(name) else "public"
 
 
+SEARCH_INDEX_NAMES = ("idx_pg_ef_title_trgm", "idx_pg_ef_doctext_trgm")
+
+
+def search_indexes_present() -> bool:
+    """True when every optional search index already exists.
+
+    The indexes are created once by the schema owner; the producer role cannot
+    recreate them (``must be owner of table exchange_filing``). Re-attempting the
+    DDL every run only produced a warning on a database that was already indexed,
+    which is why the check comes first.
+    """
+    value, code = _fetch_scalar(
+        "SELECT count(*) FROM pg_indexes WHERE schemaname = 'public'"
+        " AND tablename = 'exchange_filing' AND indexname = ANY(%s)",
+        (list(SEARCH_INDEX_NAMES),),
+    )
+    if code:
+        return False
+    try:
+        return int(value or 0) == len(SEARCH_INDEX_NAMES)
+    except (TypeError, ValueError):
+        return False
+
+
 def ensure_search_indexes() -> Tuple[bool, str]:
     """Create the optional search indexes. Best effort: never fails schema init.
 
@@ -516,6 +540,8 @@ def ensure_search_indexes() -> Tuple[bool, str]:
         return False, ERR_DRIVER_MISSING
     if not postgres_conninfo():
         return False, ERR_DSN_MISSING
+    if search_indexes_present():
+        return True, ERR_NONE
     ok, code, _ = _run(_SEARCH_EXTENSION_SQL)
     if not ok:
         log(f"  PostgreSQL search index warning: {_redact(code)[:200]}")

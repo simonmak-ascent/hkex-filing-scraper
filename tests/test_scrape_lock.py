@@ -203,3 +203,27 @@ def test_prune_coverage_reports_the_deleted_rows(monkeypatch):
 
     assert ok is True
     assert deleted == 12
+
+
+def test_search_indexes_present_counts_both(monkeypatch):
+    monkeypatch.setattr(db_postgres, "_fetch_scalar", lambda sql, params=None: (2, ""))
+    assert db_postgres.search_indexes_present() is True
+
+    monkeypatch.setattr(db_postgres, "_fetch_scalar", lambda sql, params=None: (1, ""))
+    assert db_postgres.search_indexes_present() is False
+
+    monkeypatch.setattr(db_postgres, "_fetch_scalar", lambda sql, params=None: (None, "42P01"))
+    assert db_postgres.search_indexes_present() is False
+
+
+def test_search_index_creation_is_skipped_when_already_indexed(monkeypatch):
+    monkeypatch.setattr(db_postgres, "search_indexes_present", lambda: True)
+    called = []
+    monkeypatch.setattr(
+        db_postgres, "_run", lambda sql: called.append(sql) or (True, "", 0)
+    )
+
+    ok, code = db_postgres.ensure_search_indexes()
+
+    assert ok is True
+    assert called == []  # no DDL, so no "must be owner" warning either
