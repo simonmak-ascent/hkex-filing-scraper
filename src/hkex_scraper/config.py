@@ -274,6 +274,10 @@ SCRAPER_HEARTBEAT_FILE: str = os.environ.get(
     "SCRAPER_HEARTBEAT_FILE", "/var/lib/hkex-scraper/heartbeat"
 )
 
+#: Coverage rows kept per chunk/run. The table takes one row per chunk per run; at
+#: daily polling that is ~70 rows a day, so a long history is pure overhead.
+COVERAGE_RETENTION_DAYS: int = int(os.environ.get("COVERAGE_RETENTION_DAYS", "180"))
+
 # ---------------------------------------------------------------------------
 # HKEx API
 # ---------------------------------------------------------------------------

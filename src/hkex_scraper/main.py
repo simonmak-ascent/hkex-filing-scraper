@@ -11,7 +11,12 @@ from typing import Any, Dict, List, Tuple
 
 from . import __version__, config, sinks
 from .config import LINK_TIMEOUT_SECONDS, LOG_DIR, MAX_DOWNLOAD_WORKERS
-from .db_postgres import release_scrape_lock, try_acquire_scrape_lock, write_heartbeat
+from .db_postgres import (
+    prune_coverage,
+    release_scrape_lock,
+    try_acquire_scrape_lock,
+    write_heartbeat,
+)
 from .extractor import check_dependencies
 from .graph import cross_reference_filings, link_filings_to_companies
 from .pipeline import (
@@ -434,6 +439,9 @@ def main() -> None:
             )
             if not args.dry_run:
                 write_heartbeat(run_id, "metadata", f"{total} filings saved")
+                pruned_ok, pruned = prune_coverage()
+                if pruned_ok and pruned:
+                    log(f"Pruned {pruned} coverage rows older than {config.COVERAGE_RETENTION_DAYS} days")
 
             if not args.dry_run and total > 0:
                 if args.no_link:

@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from .config import (
+    COVERAGE_RETENTION_DAYS,
     POSTGRES_FTS_INDEX,
     SCRAPER_HEARTBEAT_FILE,
     SCRAPE_LOCK_KEY,
@@ -240,6 +241,30 @@ def write_heartbeat(run_id: str, phase: str, detail: str = "") -> Tuple[bool, st
         return True, ""
     except Exception as exc:  # noqa: BLE001 - telemetry must not break the run
         return False, f"{type(exc).__name__}: {exc}"
+
+
+def prune_coverage(days: int = COVERAGE_RETENTION_DAYS) -> Tuple[bool, int]:
+    """Delete coverage rows older than *days*. Returns ``(ok, deleted)``.
+
+    Coverage is evidence of what a run saw, not a record the product reads: the
+    digest uses `exchange_filing`. Retention keeps the table bounded without losing
+    anything anyone queries. Best-effort — a prune failure must not fail a scrape.
+    """
+    if days <= 0 or not postgres_available():
+        return False, 0
+    try:
+        with _get_pool().connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    'DELETE FROM scrape_coverage WHERE "timestamp"'
+                    " < now() - make_interval(days => %s)",
+                    (days,),
+                )
+                deleted = cur.rowcount or 0
+        return True, deleted
+    except Exception as exc:  # noqa: BLE001 - retention is housekeeping
+        log(f"  WARNING: coverage prune skipped ({type(exc).__name__})")
+        return False, 0
 
 
 def close_pool() -> None:
