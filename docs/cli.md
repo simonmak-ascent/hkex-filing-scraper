@@ -19,6 +19,7 @@ hkex-scraper [options]
 | `--metadata-only` | flag | off | Phase 1 only — no document downloads. |
 | `--backfill-docs` | flag | off | Phase 2 only — process documents for filings already in the database. |
 | `--link-only` | flag | off | Only create/refresh graph edges. |
+| `--no-link` | flag | off | Skip the post-ingest graph phase. Useful for a large metadata backfill, which does not need edges. |
 | `--dry-run` | flag | off | Fetch data but write nothing. |
 | `--database-target SINKS` | comma-separated sink ids | from `DATABASE_TARGET` | Override the sinks for this run. Valid: `postgres`, `mysql`, `sqlite`, `mongodb`, `mariadb`, `neo4j`, `clickhouse`, `duckdb`, `surrealdb`. Order sets read precedence. |
 | `--coverage-report` | flag | off | Print chunk coverage from the read source, then exit. |
@@ -30,6 +31,16 @@ hkex-scraper [options]
 
 - With no mode flag, a full run is performed: Phase 1 (metadata), then graph linking, then Phase 2 (documents) — unless `--metadata-only`.
 - `--backfill-docs` and `--link-only` run phases in isolation for incremental maintenance.
+
+## Timeouts
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `API_READ_TIMEOUT` | `30` | Read timeout for one HKEX API page, in seconds. |
+| `CHUNK_DEADLINE_SECONDS` | `300` | Hard ceiling for one date chunk. A chunk that exceeds it is logged as skipped and the run continues. |
+| `LINK_TIMEOUT_SECONDS` | `300` | Hard ceiling for the graph phase; the edges are rebuilt on the next `--link-only` run. |
+| `REQUEST_DELAY_SECONDS` | `0` | Minimum gap between request starts, process-wide. Raise it to be politer to HKEX. |
+
 - `--coverage-report`, `--parity-report`, and `--verify` are read-only reports that exit after printing.
 - A `--limit` also caps the number of documents Phase 2 processes.
 

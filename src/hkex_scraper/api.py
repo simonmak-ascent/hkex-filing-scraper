@@ -4,12 +4,19 @@ from __future__ import annotations
 
 import html
 import re
+import time
 from calendar import monthrange
 from datetime import datetime
 from typing import List, Optional, Tuple
 
 from . import http
-from .config import HKEX_API_ENDPOINT, HKEX_BASE_URL, HKEX_SEARCH_PAGE
+from .config import (
+    API_READ_TIMEOUT,
+    CHUNK_DEADLINE_SECONDS,
+    HKEX_API_ENDPOINT,
+    HKEX_BASE_URL,
+    HKEX_SEARCH_PAGE,
+)
 from .utils import squash_ws
 
 # ---------------------------------------------------------------------------
@@ -244,8 +251,14 @@ def fetch_chunk_via_api(
     API_CHUNK = 5000
     fetched = 0
     api_total = None
+    deadline = time.monotonic() + CHUNK_DEADLINE_SECONDS
 
     while True:
+        if time.monotonic() > deadline:
+            raise TimeoutError(
+                f"chunk {date_from_yyyymmdd}..{date_to_yyyymmdd} exceeded "
+                f"{CHUNK_DEADLINE_SECONDS}s after {len(all_records)} records"
+            )
         if max_records > 0 and len(all_records) >= max_records:
             break
         chunk_size = API_CHUNK
@@ -278,7 +291,7 @@ def fetch_chunk_via_api(
                 "Referer": HKEX_SEARCH_PAGE,
                 "X-Requested-With": "XMLHttpRequest",
             },
-            timeout=120,
+            timeout=API_READ_TIMEOUT,
         )
         api_resp.raise_for_status()
 
@@ -296,6 +309,10 @@ def fetch_chunk_via_api(
                 records = records[:remaining]
 
         new_records = records[fetched:]
+        if not new_records and data.get("hasNextRow", False):
+            # The API advertised more rows but this page added none. Stop instead of
+            # looping: an unchanged cumulative list means the offset did not advance.
+            break
         for rec in new_records:
             all_records.append(_parse_api_record(rec))
 

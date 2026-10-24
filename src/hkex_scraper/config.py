@@ -242,6 +242,18 @@ MAX_SQL_BODY_SIZE: int = 900 * 1024  # ~900 KB text limit (SurrealDB /sql endpoi
 MAX_RPC_BODY_SIZE: int = 3_800_000  # ~3.8 MB safe limit (SurrealDB /rpc endpoint = 4 MiB)
 
 # ---------------------------------------------------------------------------
+# Timeouts (see the 2026-10-25 backfill stalls)
+# ---------------------------------------------------------------------------
+#: Read timeout for one HKEX API page. 120 s multiplied by the retry policy
+#: (~5 attempts + backoff) produced ~21-minute stalls on a slow month.
+API_READ_TIMEOUT: int = int(os.environ.get("API_READ_TIMEOUT", "30"))
+#: Hard ceiling for one date chunk. A chunk that exceeds it raises, and the run
+#: logs the month as failed and moves on instead of hanging.
+CHUNK_DEADLINE_SECONDS: int = int(os.environ.get("CHUNK_DEADLINE_SECONDS", "300"))
+#: Hard ceiling for the post-ingest graph phase, which otherwise runs unbounded.
+LINK_TIMEOUT_SECONDS: int = int(os.environ.get("LINK_TIMEOUT_SECONDS", "300"))
+
+# ---------------------------------------------------------------------------
 # HKEx API
 # ---------------------------------------------------------------------------
 HKEX_BASE_URL: str = "https://www1.hkexnews.hk"
