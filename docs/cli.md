@@ -41,6 +41,23 @@ hkex-scraper [options]
 | `LINK_TIMEOUT_SECONDS` | `300` | Hard ceiling for the graph phase; the edges are rebuilt on the next `--link-only` run. |
 | `REQUEST_DELAY_SECONDS` | `0` | Minimum gap between request starts, process-wide. Raise it to be politer to HKEX. |
 
+## Coordination
+
+One producer scrapes at a time. The run takes a PostgreSQL session-level advisory lock
+before the first chunk and releases it on exit; a second node logs the holder and exits
+without work, because the corpus is idempotent and the holder ingests the same filings.
+A missing driver or an unreachable database degrades to "unlocked" rather than stopping
+the scrape.
+
+Each run also upserts one row in `scraper_heartbeat` (`run_id`, `phase`, `detail`,
+`updated_at`) at start, after metadata, before documents and at completion, so a **hung**
+run is visible to the watchdog, not just an absent one.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `SCRAPER_LOCK` | `1` | Set to `0` for a manual run that must not wait for the lock. |
+| `SCRAPE_LOCK_KEY` | `917231002` | Advisory-lock key. Change only if another tool needs the same key. |
+
 - `--coverage-report`, `--parity-report`, and `--verify` are read-only reports that exit after printing.
 - A `--limit` also caps the number of documents Phase 2 processes.
 
