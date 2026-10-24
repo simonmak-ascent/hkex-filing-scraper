@@ -134,6 +134,7 @@ def test_heartbeat_reports_a_missing_driver(monkeypatch):
     assert ok is False
     assert code == db_postgres.ERR_DRIVER_MISSING
 
+
 def test_heartbeat_writes_a_timestamp_file_for_the_watchdog(monkeypatch, tmp_path):
     """The watchdog has no database client, so the phase must also reach a file."""
     target = tmp_path / "hb" / "heartbeat"
