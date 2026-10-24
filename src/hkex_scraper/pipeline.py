@@ -394,12 +394,25 @@ def run_phase1(
 
     session = http.get_session()
 
-    all_filings: list = []
     saved_ids: set[str] = set()
     ingested_tickers: set[str] = set()
     total_api_count: int = 0
     total_unique_count: int = 0
+    total_saved: int = 0
     run_id = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    save_batch = 50
+
+    def _save_now(pending: list) -> int:
+        """Write *pending* to the sinks and forget it.
+
+        A full-history range is ~1M filings; holding them all in memory until the
+        last chunk arrives is pure risk, and a crash late in the run would lose the
+        lot. Each chunk is persisted as soon as it is deduplicated instead.
+        """
+        saved = 0
+        for start in range(0, len(pending), save_batch):
+            saved += _save_filings_batch_metadata(pending[start : start + save_batch], dry_run)
+        return saved
 
     for chunk_idx, (chunk_from, chunk_to) in enumerate(chunks, 1):
         if max_filings > 0 and len(saved_ids) >= max_filings:
@@ -427,14 +440,23 @@ def run_phase1(
             continue
 
         chunk_new = 0
+        chunk_filings_new: list = []
         for f in chunk_filings:
             fid = filing_id_for(f)
             if fid not in saved_ids:
                 saved_ids.add(fid)
-                all_filings.append(f)
+                chunk_filings_new.append(f)
                 chunk_new += 1
                 raw_code = str(f["stockCode"]).lstrip("0") or "0"
                 ingested_tickers.add(f"{raw_code.zfill(4)}.HK")
+
+        if chunk_filings_new:
+            chunk_saved = _save_now(chunk_filings_new)
+            total_saved += chunk_saved
+            log(
+                f"  Saved {chunk_saved} filings "
+                f"({total_saved} this run, {len(saved_ids)} unique)"
+            )
 
         if api_total is not None and api_total > 0:
             pct = (chunk_new / api_total) * 100
@@ -467,7 +489,7 @@ def run_phase1(
         )
 
     log("")
-    log(f"Total unique filings fetched: {len(all_filings)}")
+    log(f"Total unique filings fetched: {len(saved_ids)}")
     if total_api_count > 0:
         overall_pct = (total_unique_count / total_api_count) * 100
         log(f"OVERALL COVERAGE: {total_unique_count}/{total_api_count} = {overall_pct:.1f}%")
@@ -480,22 +502,9 @@ def run_phase1(
     else:
         log(f"OVERALL COVERAGE: {total_unique_count} filings (API totals unavailable)")
 
-    if not all_filings:
+    if not saved_ids:
         log("No filings to save.")
         return 0, ingested_tickers
-
-    log("Saving filings to configured database sink(s)...")
-    total_saved = 0
-    SAVE_BATCH = 50
-    for i in range(0, len(all_filings), SAVE_BATCH):
-        batch = all_filings[i : i + SAVE_BATCH]
-        count = _save_filings_batch_metadata(batch, dry_run)
-        total_saved += count
-        if (i + SAVE_BATCH) % 500 == 0 or i + SAVE_BATCH >= len(all_filings):
-            log(
-                f"  Progress: {min(i + SAVE_BATCH, len(all_filings))}/{len(all_filings)} "
-                f"({total_saved} saved)"
-            )
 
     log("")
     log(f"Complete: {total_saved} filings saved to database ({len(saved_ids)} unique IDs)")
