@@ -217,6 +217,8 @@ def test_search_indexes_present_counts_both(monkeypatch):
 
 
 def test_search_index_creation_is_skipped_when_already_indexed(monkeypatch):
+    monkeypatch.setattr(db_postgres, "_PSYCOPG_AVAILABLE", True)
+    monkeypatch.setattr(db_postgres, "postgres_conninfo", lambda: "postgresql://x/y")
     monkeypatch.setattr(db_postgres, "search_indexes_present", lambda: True)
     called = []
     monkeypatch.setattr(
