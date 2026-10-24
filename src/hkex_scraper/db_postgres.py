@@ -200,14 +200,18 @@ def release_scrape_lock() -> None:
 
 
 def _write_heartbeat_file(phase: str, detail: str) -> None:
-    """Best-effort timestamp file for the watchdog, which has no database client."""
+    """Best-effort epoch stamp for operators and watchdog helpers.
+
+    Epoch seconds, not ISO: the estate's existing heartbeat readers subtract the
+    file contents from ``date +%s`` and treat anything non-numeric as missing. The
+    phase and detail live in the database row, which those readers do not use.
+    """
     if not SCRAPER_HEARTBEAT_FILE:
         return
     try:
         path = Path(SCRAPER_HEARTBEAT_FILE)
         path.parent.mkdir(parents=True, exist_ok=True)
-        stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        path.write_text(f"{stamp} {phase} {detail}".rstrip() + "\n", encoding="utf-8")
+        path.write_text(f"{int(datetime.now(timezone.utc).timestamp())}\n", encoding="utf-8")
     except Exception:  # noqa: BLE001 - telemetry must not break the run
         pass
 

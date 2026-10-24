@@ -9,6 +9,7 @@ broken lock never blocks a scrape.
 from __future__ import annotations
 
 import types
+from datetime import datetime, timezone
 
 import pytest
 
@@ -145,9 +146,9 @@ def test_heartbeat_writes_a_timestamp_file_for_the_watchdog(monkeypatch, tmp_pat
 
     assert ok is False  # no driver, but the file is still written
     body = target.read_text(encoding="utf-8").strip()
-    assert "metadata" in body
-    assert "7423 filings" in body
-    assert body.endswith("metadata 7423 filings")
+    # Epoch seconds, because existing heartbeat readers subtract it from `date +%s`.
+    assert body.isdigit()
+    assert abs(int(body) - int(datetime.now(timezone.utc).timestamp())) < 60
 
 
 def test_heartbeat_file_is_optional(monkeypatch):
