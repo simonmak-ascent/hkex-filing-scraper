@@ -221,9 +221,7 @@ def test_search_index_creation_is_skipped_when_already_indexed(monkeypatch):
     monkeypatch.setattr(db_postgres, "postgres_conninfo", lambda: "postgresql://x/y")
     monkeypatch.setattr(db_postgres, "search_indexes_present", lambda: True)
     called = []
-    monkeypatch.setattr(
-        db_postgres, "_run", lambda sql: called.append(sql) or (True, "", 0)
-    )
+    monkeypatch.setattr(db_postgres, "_run", lambda sql: called.append(sql) or (True, "", 0))
 
     ok, code = db_postgres.ensure_search_indexes()
 
