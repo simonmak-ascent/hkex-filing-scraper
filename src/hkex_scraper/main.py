@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import signal
 import sys
+import time
 from datetime import datetime
 from typing import Any, Dict, List, Tuple
 
 from . import __version__, config, sinks
-from .config import LOG_DIR, MAX_DOWNLOAD_WORKERS
+from .config import LINK_TIMEOUT_SECONDS, LOG_DIR, MAX_DOWNLOAD_WORKERS
 from .extractor import check_dependencies
 from .graph import cross_reference_filings, link_filings_to_companies
 from .pipeline import (
@@ -161,6 +163,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--link-only",
         action="store_true",
         help="Only create/refresh graph edges (no scraping or downloading)",
+    )
+    parser.add_argument(
+        "--no-link",
+        action="store_true",
+        help="Skip the post-ingest graph phase (company/filing edges)",
     )
     parser.add_argument(
         "--dry-run",
@@ -329,6 +336,35 @@ def _coverage_report() -> None:
     sys.exit(0)
 
 
+def _link_phase(ticker_set: set) -> None:
+    """Run graph linking under a hard ceiling.
+
+    The phase used to run unbounded after "Complete: N filings saved", which made a
+    finished ingest look like a hung process. It is bounded now, and a timeout is
+    logged as a skip rather than a failure: the corpus is already written.
+    """
+    log("")
+    log(f"Linking filings to companies (timeout {LINK_TIMEOUT_SECONDS}s)...")
+    started = time.monotonic()
+
+    def _alarm(_signum, _frame):
+        raise TimeoutError(f"graph phase exceeded {LINK_TIMEOUT_SECONDS}s")
+
+    previous = signal.signal(signal.SIGALRM, _alarm)
+    signal.alarm(LINK_TIMEOUT_SECONDS)
+    try:
+        count = link_filings_to_companies(ticker_set=ticker_set)
+        log(f"Created {count} edges")
+        xref_count = cross_reference_filings(ticker_set=ticker_set)
+        log(f"Created {xref_count} cross-reference edges")
+    except TimeoutError as exc:
+        log(f"  WARNING: {exc}; edges will be rebuilt on the next --link-only run")
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, previous)
+        log(f"Graph phase finished in {time.monotonic() - started:.1f}s")
+
+
 def main() -> None:
     """Entry point for the ``hkex-scraper`` CLI."""
     parser = _build_parser()
@@ -385,13 +421,11 @@ def main() -> None:
                 full_history=args.full_history,
             )
             if not args.dry_run and total > 0:
-                log("")
-                count = link_filings_to_companies(ticker_set=ingested_tickers)
-                log(f"Created {count} edges")
-                log("")
-                xref_count = cross_reference_filings(ticker_set=ingested_tickers)
-                log(f"Created {xref_count} cross-reference edges")
-                log("")
+                if args.no_link:
+                    log("")
+                    log("Skipping graph linking (--no-link)")
+                else:
+                    _link_phase(ingested_tickers)
 
                 # Phase 2: download documents (default unless --metadata-only)
                 if not args.metadata_only:
