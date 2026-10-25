@@ -44,9 +44,10 @@ Format identifiers, paths, variables, and commands as `` `code` ``. Format sink 
   characters, saying what the page answers. It becomes the search snippet, the `og:` and
   `twitter:` description, and the JSON-LD `description`, so a missing or duplicated one is a
   missing or duplicated listing in search results.
-- **Always quote it.** YAML treats `: ` inside an unquoted scalar as a mapping, and MkDocs
-  does not fail the build for that: it drops the entire front-matter block, so the page
-  silently loses its description, `og:` tags and JSON-LD.
+- **Always quote it.** YAML reads a colon followed by a space as a mapping, so an unquoted
+  description that contains one breaks the block. MkDocs does not fail the build for that —
+  it drops the entire front-matter block, so the page silently loses its description, its
+  `og:` tags and its JSON-LD.
 
   ```yaml
   ---
