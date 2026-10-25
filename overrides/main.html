@@ -27,6 +27,11 @@
   <meta name="twitter:description" content="{{ og_desc }}" />
   <meta name="twitter:image" content="{{ config.site_url }}social_preview.png?v=2" />
   <meta name="twitter:image:alt" content="HKEx Filing Scraper — HKEx filings, live for AI agents, and nine databases to keep them" />
+  {# schema.org JSON-LD, built per page by hooks/seo.py (WebSite, SoftwareApplication,
+     TechArticle, HowTo, BreadcrumbList). `safe` keeps the JSON unescaped. #}
+  {% if page_jsonld %}
+  <script type="application/ld+json">{{ page_jsonld | safe }}</script>
+  {% endif %}
   {# Vercel Web Analytics - https://vercel.com/docs/analytics/quickstart #}
   <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
