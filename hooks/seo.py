@@ -34,6 +34,10 @@ from urllib.parse import urljoin
 #: Pages whose H2 headings are a procedure, rendered as ``HowTo``.
 HOWTO_PAGES = frozenset({"getting-started/", "live-mcp/", "scheduled-ingest/"})
 
+#: Trailing sections that are navigation, not procedure. They are excluded from the step
+#: list, otherwise "Next steps" is published as the last thing a reader must do.
+NON_STEP_HEADINGS = frozenset({"next steps", "see also", "related", "further reading"})
+
 #: Engine names for the sink guides, used as ``TechArticle.about``.
 SINK_ENGINES = {
     "postgresql": "PostgreSQL",
@@ -80,7 +84,7 @@ def _steps_from_html(content: Any, page_title: str = "") -> list[dict[str, str]]
         # here as the entities `&para;` / `&#182;`, so strip tags first, then unescape.
         title = _TAGS.sub("", inner)
         title = html.unescape(title).replace("\u00b6", " ").strip()
-        if not title or title == page_title:
+        if not title or title == page_title or title.lower() in NON_STEP_HEADINGS:
             continue
         steps.append({"@type": "HowToStep", "name": title, "text": title})
     return steps

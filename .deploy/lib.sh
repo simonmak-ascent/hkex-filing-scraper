@@ -440,6 +440,11 @@ write_app_vhost() {
       # robots.txt lives at /docs/robots.txt, where nothing looks.
       printf '\thandle /robots.txt {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$APP"
       printf '\thandle /sitemap.xml {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$APP"
+      # The llmstxt.org convention puts both files at the root as well. The catch-all
+      # would otherwise 301 them to /docs/, which is an HTML page, so an agent asking
+      # for the index received the home page.
+      printf '\thandle /llms.txt {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$APP"
+      printf '\thandle /llms-full.txt {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$APP"
     fi
     # python MCP/REST routes
     py_has && py_caddy_handles "$slot"

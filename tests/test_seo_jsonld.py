@@ -117,6 +117,22 @@ def test_getting_started_is_a_howto_whose_steps_are_its_headings():
     assert howto["url"] == "https://example.test/docs/getting-started/"
 
 
+def test_navigation_headings_are_not_steps():
+    content = (
+        "<h2>Choose the window</h2><h2>Schedule it</h2>"
+        '<h2 id="next-steps">Next steps<a class="headerlink">&para;</a></h2>'
+        "<h2>See also</h2>"
+    )
+    graph = seo.build_graph(
+        site_url=SITE,
+        site_name=NAME,
+        site_description=DESC,
+        page=page("scheduled-ingest/", "Scheduled ingest", content=content),
+    )
+    howto = next(entity for entity in graph if entity["@type"] == "HowTo")
+    assert [step["name"] for step in howto["step"]] == ["Choose the window", "Schedule it"]
+
+
 def test_a_howto_without_headings_is_not_emitted():
     graph = seo.build_graph(
         site_url=SITE,

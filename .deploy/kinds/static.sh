@@ -159,7 +159,7 @@ cmd_smoke() {
   # by law-abiding crawlers, and a docs-native vhost serves them out of the docs root.
   # Both were silently unreachable once (a mis-parsed `redir` left every path at an
   # empty 200), and `/docs/` returning 200 did not notice.
-  for file in /robots.txt /sitemap.xml; do
+  for file in /robots.txt /sitemap.xml /llms.txt /llms-full.txt; do
     code="$(probe_public "$file")"
     [ "$code" = "200" ] || die "smoke FAIL https://$DOMAIN$file -> $code after 20s"
   done
