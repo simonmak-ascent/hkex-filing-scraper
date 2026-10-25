@@ -6,10 +6,30 @@ shapes are asserted without building the site.
 
 from __future__ import annotations
 
+import importlib.util
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
-from hooks import seo
+import pytest
+
+#: The hook is a MkDocs build artefact, not part of the wheel, so it is loaded by path.
+#: The `wheel` CI job runs the suite against the installed package where it is absent.
+HOOK = Path(__file__).resolve().parents[1] / "hooks" / "seo.py"
+pytestmark = pytest.mark.skipif(
+    not HOOK.exists(), reason="MkDocs build hook is not shipped in the wheel"
+)
+
+
+def _load_hook():
+    spec = importlib.util.spec_from_file_location("seo_hook", HOOK)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+seo = _load_hook() if HOOK.exists() else None  # noqa: F841 - referenced by the tests
 
 SITE = "https://example.test/docs/"
 NAME = "HKEx Filing Scraper"
