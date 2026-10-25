@@ -1,5 +1,5 @@
 ---
-description: Write HKEx filings and document payloads to MySQL or MariaDB with ON DUPLICATE KEY UPDATE. DSN variables, schema, and the GPLv2 licence note.
+description: "Write HKEx filings and document payloads to MySQL or MariaDB with ON DUPLICATE KEY UPDATE. DSN variables, schema, and the GPLv2 licence note."
 ---
 
 # MySQL and MariaDB sink

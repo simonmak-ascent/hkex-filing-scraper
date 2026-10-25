@@ -1,5 +1,5 @@
 ---
-description: Write HKEx filings and documents to a DuckDB file or :memory: for local analytics, with ON CONFLICT DO UPDATE. No server required.
+description: "Write HKEx filings and documents to a DuckDB file or :memory: for local analytics, with ON CONFLICT DO UPDATE. No server required."
 ---
 
 # DuckDB sink

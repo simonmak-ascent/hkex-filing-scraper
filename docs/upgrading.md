@@ -1,5 +1,5 @@
 ---
-description: Migration notes between releases. 2.0.0 replaced the two-value DATABASE_TARGET with an ordered list of sink ids, and added seven sinks.
+description: "Migration notes between releases. 2.0.0 replaced the two-value DATABASE_TARGET with an ordered list of sink ids, and added seven sinks."
 ---
 
 # Upgrading

@@ -1,5 +1,5 @@
 ---
-description: Support matrix for every HKEx Filing Scraper sink — licenses, capability differences, and per-engine notes.
+description: "Support matrix for every HKEx Filing Scraper sink — licenses, capability differences, and per-engine notes."
 ---
 
 # Database sinks

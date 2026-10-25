@@ -1,5 +1,5 @@
 ---
-description: Install HKEx Filing Scraper, set DATABASE_TARGET, and run your first HKEx filing scrape in minutes.
+description: "Install HKEx Filing Scraper, set DATABASE_TARGET, and run your first HKEx filing scrape in minutes."
 ---
 
 # Getting Started

@@ -1,5 +1,5 @@
 ---
-description: Write HKEx filings, document payloads, coverage rows and graph edges to PostgreSQL as the only sink or alongside others. Schema, DSN variables, upsert behaviour and indexing.
+description: "Write HKEx filings, document payloads, coverage rows and graph edges to PostgreSQL as the only sink or alongside others. Schema, DSN variables, upsert behaviour and indexing."
 ---
 
 # PostgreSQL sink

@@ -1,5 +1,5 @@
 ---
-description: Run the read-only stdio MCP server over a stored HKEx corpus and query it from an LLM client.
+description: "Run the read-only stdio MCP server over a stored HKEx corpus and query it from an LLM client."
 ---
 
 # MCP server

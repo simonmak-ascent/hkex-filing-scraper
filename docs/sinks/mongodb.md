@@ -1,5 +1,5 @@
 ---
-description: Write HKEx filings and document payloads to MongoDB with update_one(upsert=True). Connection string, collections, and the SSPL licence exception.
+description: "Write HKEx filings and document payloads to MongoDB with update_one(upsert=True). Connection string, collections, and the SSPL licence exception."
 ---
 
 # MongoDB sink

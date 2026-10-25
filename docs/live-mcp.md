@@ -1,5 +1,5 @@
 ---
-description: The hosted, database-free live MCP gateway for HKEx filings — endpoint, tools, limits, and security.
+description: "The hosted, database-free live MCP gateway for HKEx filings — endpoint, tools, limits, and security."
 ---
 
 # Live MCP gateway

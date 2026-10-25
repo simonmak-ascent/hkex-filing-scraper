@@ -1,5 +1,5 @@
 ---
-description: Documentation for HKEx Filing Scraper — scrape and ingest Hong Kong Stock Exchange regulatory filings into nine databases, with a hosted MCP server for AI agents.
+description: "Documentation for HKEx Filing Scraper — scrape and ingest Hong Kong Stock Exchange regulatory filings into nine databases, with a hosted MCP server for AI agents."
 ---
 
 ![HKEx Filing Scraper — HKEx filings, live for AI agents, and nine databases to keep them](assets/banner.svg)
