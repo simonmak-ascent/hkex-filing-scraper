@@ -84,5 +84,5 @@ existing row. Re-running is always idempotent.
 1. Add a `Dialect` (SQL) or a native adapter in `src/hkex_scraper/sinks/`.
 2. Register it in `sinks/registry.py` with its license, OSI status, and optional extra.
 3. Add dialect/contract tests and, where a service is required, a CI job.
-4. Add it to the support matrix above, to the docs nav, and to the wiki page map; if the
+4. Add it to the support matrix above, to the docs nav, and to `scripts/mirror_wiki.py:SECTIONS`; if the
    license is source-available, label it.

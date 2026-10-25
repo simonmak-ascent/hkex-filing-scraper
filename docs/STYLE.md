@@ -5,8 +5,8 @@ description: "Writing rules for every doc in this repo: US English, sentence cas
 # Documentation style
 
 One rulebook for every human-facing doc in this repo: the README, the community files
-(`CONTRIBUTING`, `SECURITY`, `SUPPORT`, …), GitHub templates, the wiki, and the docs site
-under `docs/`. Consistency matters more than any individual rule below — when in doubt,
+(`CONTRIBUTING`, `SECURITY`, `SUPPORT`, …), GitHub templates, and the docs site under
+`docs/`. Consistency matters more than any individual rule below — when in doubt,
 match the surrounding text.
 
 ## Language
