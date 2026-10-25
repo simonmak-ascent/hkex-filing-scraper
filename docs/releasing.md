@@ -1,5 +1,5 @@
 ---
-description: Cut a release by pushing a tag. What number to pick, which tag triggers the publish, and what the automation does with it.
+description: "Cut a release by pushing a tag. What number to pick, which tag triggers the publish, and what the automation does with it."
 ---
 
 # How to Make a Release

@@ -1,5 +1,5 @@
 ---
-description: Licence, terms of use, and data handling: what the scraper does and does not claim about HKEX, where filings are stored, and how to attribute the source.
+description: "Licence, terms of use, and data handling: what the scraper does and does not claim about HKEX, where filings are stored, and how to attribute the source."
 ---
 
 # Legal, Terms of Use, and Data

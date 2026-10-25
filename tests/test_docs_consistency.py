@@ -392,14 +392,40 @@ class TestPageDescriptions:
         nav = nav.split("\n\n", 1)[0]
         return re.findall(r"([\w./-]+\.md)", nav)
 
-    def _description(self, rel: str) -> str:
-        """The `description:` front-matter value, or an empty string."""
+    def _raw_description(self, rel: str) -> str:
+        """The `description:` front-matter value exactly as written, or an empty string."""
         text = _read(rel) if rel.startswith("docs/") else _read(f"docs/{rel}")
         if not text.startswith("---\n"):
             return ""
         front_matter = text.split("\n---\n", 1)[0]
         match = re.search(r"^description:\s*(.+)$", front_matter, re.MULTILINE)
         return match.group(1).strip() if match else ""
+
+    def _description(self, rel: str) -> str:
+        """The description with its YAML quotes removed."""
+        return self._raw_description(rel).strip('"')
+
+    def test_descriptions_are_quoted_yaml_scalars(self):
+        """An unquoted `description:` containing `: ` is invalid YAML.
+
+        MkDocs does not fail the build: it drops the whole front-matter block, so the page
+        silently loses its title, its `og:` tags and its JSON-LD description. Quoting makes
+        any sentence valid, so the test asserts the quoting rather than parsing YAML (which
+        the unit-test job does not install).
+        """
+        unquoted = [
+            page
+            for page in self._nav_pages()
+            if not (
+                self._raw_description(page).startswith('"')
+                and self._raw_description(page).endswith('"')
+            )
+        ]
+        assert not unquoted, f"descriptions must be double-quoted: {unquoted}"
+
+    def test_descriptions_cannot_break_out_of_their_quotes(self):
+        offenders = [page for page in self._nav_pages() if '"' in self._description(page)]
+        assert not offenders, f"descriptions must not contain a double quote: {offenders}"
 
     def test_every_nav_page_has_a_description(self):
         missing = [page for page in self._nav_pages() if not self._description(page)]

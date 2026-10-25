@@ -1,5 +1,5 @@
 ---
-description: Fixes for the errors you are most likely to hit: missing DATABASE_TARGET, driver imports, connection failures, empty results, and document extraction.
+description: "Fixes for the errors you are most likely to hit: missing DATABASE_TARGET, driver imports, connection failures, empty results, and document extraction."
 ---
 
 # Troubleshooting

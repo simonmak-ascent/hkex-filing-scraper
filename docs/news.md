@@ -1,5 +1,5 @@
 ---
-description: What's new in HKEx Filing Scraper — dated notes for each release, starting with the AI-agent MCP release.
+description: "What's new in HKEx Filing Scraper — dated notes for each release, starting with the AI-agent MCP release."
 ---
 
 # What's new

@@ -1,5 +1,5 @@
 ---
-description: Write HKEx filings to Neo4j as nodes and relationships, with MERGE for idempotency. Connection variables, node model and constraints.
+description: "Write HKEx filings to Neo4j as nodes and relationships, with MERGE for idempotency. Connection variables, node model and constraints."
 ---
 
 # Neo4j sink

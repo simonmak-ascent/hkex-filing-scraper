@@ -1,5 +1,5 @@
 ---
-description: Writing rules for every doc in this repo: US English, sentence case, sink versus engine, table and list spacing, and the lint rules that enforce them.
+description: "Writing rules for every doc in this repo: US English, sentence case, sink versus engine, table and list spacing, and the lint rules that enforce them."
 ---
 
 # Documentation style
@@ -44,10 +44,13 @@ Format identifiers, paths, variables, and commands as `` `code` ``. Format sink 
   characters, saying what the page answers. It becomes the search snippet, the `og:` and
   `twitter:` description, and the JSON-LD `description`, so a missing or duplicated one is a
   missing or duplicated listing in search results.
+- **Always quote it.** YAML treats `: ` inside an unquoted scalar as a mapping, and MkDocs
+  does not fail the build for that: it drops the entire front-matter block, so the page
+  silently loses its description, `og:` tags and JSON-LD.
 
   ```yaml
   ---
-  description: Write HKEx filings to PostgreSQL as the only sink or alongside others.
+  description: "Write HKEx filings to PostgreSQL as the only sink or alongside others."
   ---
   ```
 

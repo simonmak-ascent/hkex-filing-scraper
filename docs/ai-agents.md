@@ -1,5 +1,5 @@
 ---
-description: Connect the live HKEx MCP gateway from Claude, ChatGPT, Cursor, VS Code/Copilot, Gemini CLI, opencode, Manus, and Perplexity.
+description: "Connect the live HKEx MCP gateway from Claude, ChatGPT, Cursor, VS Code/Copilot, Gemini CLI, opencode, Manus, and Perplexity."
 ---
 
 # AI agent support

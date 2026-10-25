@@ -1,5 +1,5 @@
 ---
-description: The living risk register: each risk scored L×I, its current control, and the release horizon (C1/C2/C3) that owns it.
+description: "The living risk register: each risk scored L×I, its current control, and the release horizon (C1/C2/C3) that owns it."
 ---
 
 # De-risking register

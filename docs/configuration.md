@@ -1,5 +1,5 @@
 ---
-description: Every environment variable for HKEx Filing Scraper, including the DATABASE_TARGET sink selector and per-sink connection settings.
+description: "Every environment variable for HKEx Filing Scraper, including the DATABASE_TARGET sink selector and per-sink connection settings."
 ---
 
 # Configuration Reference

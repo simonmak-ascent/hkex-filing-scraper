@@ -1,5 +1,5 @@
 ---
-description: Write HKEx filings, documents, coverage and graph edges to a local SQLite file using only the Python standard library. No extra dependency.
+description: "Write HKEx filings, documents, coverage and graph edges to a local SQLite file using only the Python standard library. No extra dependency."
 ---
 
 # SQLite sink

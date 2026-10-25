@@ -1,5 +1,5 @@
 ---
-description: Command-line reference for hkex-scraper — every flag, the exit codes, and examples.
+description: "Command-line reference for hkex-scraper — every flag, the exit codes, and examples."
 ---
 
 # CLI Reference
