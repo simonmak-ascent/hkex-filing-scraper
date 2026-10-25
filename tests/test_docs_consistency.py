@@ -361,7 +361,8 @@ class TestMcpRegistryManifest:
         manifest = self._manifest()
         assert manifest["name"] == "com.ascent-partners/hkex-filings"
         assert manifest["description"].endswith(".")
-        assert f"{_site_domain()}/api/mcp" in [r["url"] for r in manifest["remotes"]]
+        # The gateway is a root route, not a docs page, so compare the origin.
+        assert f"{_site_origin()}/api/mcp" in [r["url"] for r in manifest["remotes"]]
 
     def test_package_entry_points_at_this_distribution(self):
         packages = self._manifest()["packages"]
