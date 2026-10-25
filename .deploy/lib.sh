@@ -109,11 +109,30 @@ caddy_reload() {
   # app repos: concurrent deploys otherwise race and fail each other's reload.
   # The lock used to live in /run/lock, a sticky directory: root cannot open a
   # file there that the deploy user created (fs.protected_regular), so the CD
-  # failed exactly when it mattered. A dedicated non-sticky directory both users
-  # can write solves it.
-  local lockdir=/var/lib/apg-deploy
-  as_root install -d -m 0775 -o root -g "${DEPLOY_GROUP:-deploy}" "$lockdir" 2>/dev/null \
-    || mkdir -p "$lockdir" 2>/dev/null || true
+  # failed exactly when it mattered.
+  #
+  # The shared directory is only usable when the deploy user is in `deploy` and
+  # can actually write it. `install -d` leaves an existing root-owned 0755
+  # directory untouched, and the failure then surfaces as "Permission denied" on
+  # the lock file *after* the vhost has been written — which took the rollback
+  # down with it on ecs-03 (2026-10-25). So the directory is chosen by trying to
+  # write, with per-user fallbacks: a per-user lock still serialises that user's
+  # runs, which is the property the lock is there for.
+  local lockdir="" shared=/var/lib/apg-deploy
+  # Only the shared directory gets the root:deploy treatment; a fallback must stay
+  # owned by the deploy user, or the fallback itself would be unusable.
+  if ! as_root install -d -m 0775 -o root -g "${DEPLOY_GROUP:-deploy}" "$shared" 2>/dev/null; then
+    log "caddy lock: cannot prepare $shared; trying a per-user directory"
+  fi
+  for candidate in "$shared" "${XDG_CACHE_HOME:-$HOME/.cache}/apg-deploy" "/tmp/apg-deploy-$(id -u)"; do
+    [ "$candidate" = "$shared" ] || mkdir -p "$candidate" 2>/dev/null || continue
+    if [ -w "$candidate" ] && : >> "$candidate/caddy.lock" 2>/dev/null; then
+      lockdir="$candidate"
+      break
+    fi
+  done
+  [ -n "$lockdir" ] || die "no writable directory for the Caddy deploy lock"
+  [ "$lockdir" = "$shared" ] || log "caddy lock: using $lockdir (shared directory not writable)"
   exec 9>>"$lockdir/caddy.lock"
   flock -w 120 9 || die "timed out waiting for the Caddy deploy lock"
   as_root systemctl restart caddy
