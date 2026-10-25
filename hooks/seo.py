@@ -25,7 +25,9 @@ its headings, so the markup cannot drift from the prose.
 
 from __future__ import annotations
 
+import html
 import json
+import re
 from typing import Any
 from urllib.parse import urljoin
 
@@ -61,17 +63,24 @@ def _description(page: Any, site_description: str) -> str:
     return value or site_description
 
 
-def _steps_from_toc(toc: Any, page_title: str = "") -> list[dict[str, str]]:
-    """Turn the page's section headings into ``HowToStep`` entries.
+_H2 = re.compile(r"<h2[^>]*>(.*?)</h2>", re.DOTALL | re.IGNORECASE)
+_TAGS = re.compile(r"<[^>]+>")
 
-    MkDocs' toc includes the page's own H1 (``level 1``), which is the page title, not a
-    step — it is skipped so the HowTo starts at the first real section.
+
+def _steps_from_html(content: Any, page_title: str = "") -> list[dict[str, str]]:
+    """Turn the page's rendered H2 headings into ``HowToStep`` entries.
+
+    The rendered content is used rather than ``page.toc``: the toc is not reliably
+    populated when the page-context hook runs, and the H2s are what the reader sees as
+    steps. The page's own H1 is the title, never a step.
     """
     steps: list[dict[str, str]] = []
-    for item in toc or []:
-        title = getattr(item, "title", None)
-        level = getattr(item, "level", 2)
-        if not title or level < 2 or title == page_title:
+    for inner in _H2.findall(str(content or "")):
+        # Material appends a permalink anchor inside the heading; its glyph reaches
+        # here as the entities `&para;` / `&#182;`, so strip tags first, then unescape.
+        title = _TAGS.sub("", inner)
+        title = html.unescape(title).replace("\u00b6", " ").strip()
+        if not title or title == page_title:
             continue
         steps.append({"@type": "HowToStep", "name": title, "text": title})
     return steps
@@ -100,7 +109,9 @@ def nav_titles(nav: Any) -> dict[str, str]:
                             titles.setdefault(head, title or head.title())
                 walk(children)
             elif url:
-                titles[url.strip("/")] = title or url
+                # setdefault: `sinks/README.md` (a page) must not rename the `sinks`
+                # prefix that the "Sinks" section already owns.
+                titles.setdefault(url.strip("/"), title or url)
 
     walk(nav)
     return titles
@@ -161,7 +172,7 @@ def _howto(site_url: str, page: Any, description: str) -> dict[str, Any]:
         "description": description,
         "url": _absolute(site_url, getattr(page, "url", "") or ""),
         "totalTime": "PT10M",
-        "step": _steps_from_toc(getattr(page, "toc", None), _heading(page)),
+        "step": _steps_from_html(getattr(page, "content", None), _heading(page)),
     }
 
 

@@ -42,8 +42,7 @@ def page(
     *,
     description: str | None = None,
     home: bool = False,
-    toc: list | None = None,
-    ancestors: list | None = None,
+    content: str = "",
 ) -> SimpleNamespace:
     meta = {"description": description} if description else {}
     return SimpleNamespace(
@@ -51,8 +50,7 @@ def page(
         title=title,
         meta=meta,
         is_homepage=home,
-        toc=toc or [],
-        ancestors=ancestors or [],
+        content=content,
     )
 
 
@@ -84,7 +82,6 @@ def test_a_sink_page_is_an_article_about_that_engine():
             "sinks/postgresql/",
             "PostgreSQL",
             description="Load HKEx filings into PostgreSQL.",
-            ancestors=[SimpleNamespace(url="sinks/", title="Sinks")],
         ),
     )
 
@@ -98,22 +95,25 @@ def test_a_sink_page_is_an_article_about_that_engine():
 
 
 def test_getting_started_is_a_howto_whose_steps_are_its_headings():
-    # MkDocs' toc starts with the page H1, which is the title, not a step.
-    toc = [
-        SimpleNamespace(title="Getting Started", level=1),
-        SimpleNamespace(title="Install", level=2),
-        SimpleNamespace(title="Scrape", level=2),
-    ]
+    # As Material renders it: the permalink anchor carries `&para;`, and the fenced
+    # code blocks contain `#` lines that are not headings.
+    content = (
+        '<h2 id="requirements">Requirements'
+        '<a class="headerlink" href="#requirements">&para;</a></h2>'
+        "<pre><code># PostgreSQL</code></pre>"
+        '<h2 id="install">Install</h2>'
+        '<h2 id="scrape">Scrape &#182;</h2>'
+    )
     graph = seo.build_graph(
         site_url=SITE,
         site_name=NAME,
         site_description=DESC,
-        page=page("getting-started/", "Getting Started", toc=toc),
+        page=page("getting-started/", "Getting started", content=content),
     )
 
     assert "HowTo" in types(graph)
     howto = next(entity for entity in graph if entity["@type"] == "HowTo")
-    assert [step["name"] for step in howto["step"]] == ["Install", "Scrape"]
+    assert [step["name"] for step in howto["step"]] == ["Requirements", "Install", "Scrape"]
     assert howto["url"] == "https://example.test/docs/getting-started/"
 
 
