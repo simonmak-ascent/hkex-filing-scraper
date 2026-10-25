@@ -1,3 +1,7 @@
+---
+description: ADR 0004: publish hkex-filing-scraper to PyPI with Trusted Publishing over OIDC, so no long-lived API token exists in the repository.
+---
+
 # ADR 0004 — Publish to PyPI via Trusted Publishing
 
 - Status: Accepted

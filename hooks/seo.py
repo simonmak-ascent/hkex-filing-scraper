@@ -145,13 +145,14 @@ def _breadcrumb(site_url: str, page: Any, titles: dict[str, str] | None = None) 
     return {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": trail}
 
 
-def _article(site_url: str, page: Any, site_name: str) -> dict[str, Any]:
+def _article(site_url: str, page: Any, site_name: str, description: str) -> dict[str, Any]:
     url = _absolute(site_url, getattr(page, "url", "") or "")
     article: dict[str, Any] = {
         "@context": "https://schema.org",
         "@type": "TechArticle",
         "headline": _heading(page),
         "url": url,
+        "description": description,
         "isPartOf": {
             "@type": "WebSite",
             "name": site_name,
@@ -231,7 +232,7 @@ def build_graph(
             graph.append(howto)
 
     if not bool(getattr(page, "is_homepage", False)):
-        graph.append(_article(site_url, page, site_name))
+        graph.append(_article(site_url, page, site_name, description))
 
     # The homepage is the trail's own root; a one-item breadcrumb is noise.
     if not bool(getattr(page, "is_homepage", False)):

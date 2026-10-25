@@ -1,3 +1,7 @@
+---
+description: ADR 0001: use hatch-vcs so the git tag is the single source of truth for the version, and let CI build and publish from that tag. Superseded by ADR 0004.
+---
+
 # ADR 0001 — Versioning and release automation
 
 - Status: Superseded by ADR 0004 (PyPI publishing)

@@ -1,3 +1,7 @@
+---
+description: Write HKEx filings and document payloads to SurrealDB over its HTTP API using SurrealQL. Record model, SCHEMAFULL tables and the payload limits.
+---
+
 # SurrealDB sink
 
 Persist filings, documents, coverage rows, and graph edges to SurrealDB over its HTTP API,

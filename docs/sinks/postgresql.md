@@ -1,3 +1,7 @@
+---
+description: Write HKEx filings, document payloads, coverage rows and graph edges to PostgreSQL as the only sink or alongside others. Schema, DSN variables, upsert behaviour and indexing.
+---
+
 # PostgreSQL sink
 
 Mirror every record — filings, document payloads, coverage rows, and graph edges — into

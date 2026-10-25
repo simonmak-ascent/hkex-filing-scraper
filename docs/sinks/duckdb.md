@@ -1,3 +1,7 @@
+---
+description: Write HKEx filings and documents to a DuckDB file or :memory: for local analytics, with ON CONFLICT DO UPDATE. No server required.
+---
+
 # DuckDB sink
 
 Persist filings, document payloads, coverage rows, and graph edges to a DuckDB database
