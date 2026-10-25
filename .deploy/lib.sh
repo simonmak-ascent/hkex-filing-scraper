@@ -288,7 +288,7 @@ docs_publish() {
 # ── shared Caddy vhost wrapper (ordering proven on ecs-01) ────────────────────
 # write_app_vhost <outfile> <slot> <frontend>
 #   frontend = next   -> catch-all reverse_proxy 127.0.0.1:<next slot port>
-#   frontend = static -> catch-all redir /docs 302 (docs-native app; docs at /docs)
+#   frontend = static -> catch-all redir * /docs 302 (docs-native app; docs at /docs)
 # Emits: geo country header + docs (/docs) + python routes + coraza + rate_limit
 # inside a catch-all `handle`; specific `handle`s for /docs and the python routes
 # come first (Caddy `handle` blocks are mutually exclusive, first match wins).
@@ -435,6 +435,11 @@ write_app_vhost() {
     if mf docs >/dev/null 2>&1; then
       local dpath; dpath="$(mf docs.path 2>/dev/null || echo /docs)"
       printf '\thandle_path %s/* {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$dpath" "$APP"
+      # Crawlers only read /robots.txt and /sitemap.xml at the HOST ROOT, so both are
+      # served from the docs tree under their root names. Without this the only
+      # robots.txt lives at /docs/robots.txt, where nothing looks.
+      printf '\thandle /robots.txt {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$APP"
+      printf '\thandle /sitemap.xml {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$APP"
     fi
     # python MCP/REST routes
     py_has && py_caddy_handles "$slot"
@@ -461,7 +466,10 @@ write_app_vhost() {
           printf '\t\treverse_proxy 127.0.0.1:%s\n' "$(slot_port "$slot")"
         fi
         ;;
-      static) printf '\t\tredir /docs 302\n' ;;
+      # The matcher must be explicit: `redir /docs 302` is parsed as matcher
+      # `/docs` with destination "302", which 302s /docs to the literal string and
+      # leaves every other path with an empty 200.
+      static) printf '\t\tredir * /docs 302\n' ;;
       node) printf '\t\treverse_proxy 127.0.0.1:%s\n' "$(slot_port "$slot")" ;;
       *) die "write_app_vhost: unknown frontend '$frontend'" ;;
     esac
