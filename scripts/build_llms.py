@@ -17,7 +17,22 @@ import sys
 from pathlib import Path
 
 DOCS_DIR = Path("docs")
-BASE_URL = "https://hkex-listco-updates.ascent-partners.com/"
+MKDOCS = Path("mkdocs.yml")
+
+
+def _site_url() -> str:
+    """The published base URL, read from mkdocs.yml.
+
+    One source of truth: the site is mounted at /docs by the vhost, so a hardcoded
+    root here would emit links that resolve to a blank page.
+    """
+    for line in MKDOCS.read_text(encoding="utf-8").splitlines():
+        if line.startswith("site_url:"):
+            return line.split(":", 1)[1].strip().rstrip("/") + "/"
+    raise SystemExit("mkdocs.yml has no site_url")
+
+
+BASE_URL = _site_url()
 
 
 def _page_url(path: Path) -> str:

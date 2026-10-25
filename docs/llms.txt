@@ -8,49 +8,49 @@
 
 ## Getting started
 
-- [Home](https://hkex-listco-updates.ascent-partners.com/): what the project is and where to start.
-- [What's new](https://hkex-listco-updates.ascent-partners.com/news/): dated release notes, newest first.
-- [Getting started](https://hkex-listco-updates.ascent-partners.com/getting-started/): install, quick start, and first run.
-- [Configuration](https://hkex-listco-updates.ascent-partners.com/configuration/): every environment variable and the `DATABASE_TARGET` sink selector.
-- [CLI](https://hkex-listco-updates.ascent-partners.com/cli/): command-line reference and flags.
-- [MCP server](https://hkex-listco-updates.ascent-partners.com/mcp/): a read-only Model Context Protocol server over stdio for LLM clients.
-- [Live MCP gateway](https://hkex-listco-updates.ascent-partners.com/live-mcp/): a hosted, database-free Streamable HTTP MCP endpoint that searches live HKEx filings with filters, browses window facets, and downloads documents; no API key.
-- [AI agent support](https://hkex-listco-updates.ascent-partners.com/ai-agents/): connect the gateway from Claude, ChatGPT, Cursor, Copilot, Gemini, opencode, Manus, and Perplexity.
+- [Home](https://hkex-listco-updates.ascent-partners.com/docs/): what the project is and where to start.
+- [What's new](https://hkex-listco-updates.ascent-partners.com/docs/news/): dated release notes, newest first.
+- [Getting started](https://hkex-listco-updates.ascent-partners.com/docs/getting-started/): install, quick start, and first run.
+- [Configuration](https://hkex-listco-updates.ascent-partners.com/docs/configuration/): every environment variable and the `DATABASE_TARGET` sink selector.
+- [CLI](https://hkex-listco-updates.ascent-partners.com/docs/cli/): command-line reference and flags.
+- [MCP server](https://hkex-listco-updates.ascent-partners.com/docs/mcp/): a read-only Model Context Protocol server over stdio for LLM clients.
+- [Live MCP gateway](https://hkex-listco-updates.ascent-partners.com/docs/live-mcp/): a hosted, database-free Streamable HTTP MCP endpoint that searches live HKEx filings with filters, browses window facets, and downloads documents; no API key.
+- [AI agent support](https://hkex-listco-updates.ascent-partners.com/docs/ai-agents/): connect the gateway from Claude, ChatGPT, Cursor, Copilot, Gemini, opencode, Manus, and Perplexity.
 
 ## Database sinks
 
-- [Overview](https://hkex-listco-updates.ascent-partners.com/sinks/): support matrix, capabilities, and popularity order.
-- [PostgreSQL](https://hkex-listco-updates.ascent-partners.com/sinks/postgresql/), [MySQL / MariaDB](https://hkex-listco-updates.ascent-partners.com/sinks/mysql/), [SQLite](https://hkex-listco-updates.ascent-partners.com/sinks/sqlite/), [MongoDB](https://hkex-listco-updates.ascent-partners.com/sinks/mongodb/), [Neo4j](https://hkex-listco-updates.ascent-partners.com/sinks/neo4j/), [ClickHouse](https://hkex-listco-updates.ascent-partners.com/sinks/clickhouse/), [DuckDB](https://hkex-listco-updates.ascent-partners.com/sinks/duckdb/), [SurrealDB](https://hkex-listco-updates.ascent-partners.com/sinks/surrealdb/): per-engine setup, upserts, and notes.
+- [Overview](https://hkex-listco-updates.ascent-partners.com/docs/sinks/): support matrix, capabilities, and popularity order.
+- [PostgreSQL](https://hkex-listco-updates.ascent-partners.com/docs/sinks/postgresql/), [MySQL / MariaDB](https://hkex-listco-updates.ascent-partners.com/docs/sinks/mysql/), [SQLite](https://hkex-listco-updates.ascent-partners.com/docs/sinks/sqlite/), [MongoDB](https://hkex-listco-updates.ascent-partners.com/docs/sinks/mongodb/), [Neo4j](https://hkex-listco-updates.ascent-partners.com/docs/sinks/neo4j/), [ClickHouse](https://hkex-listco-updates.ascent-partners.com/docs/sinks/clickhouse/), [DuckDB](https://hkex-listco-updates.ascent-partners.com/docs/sinks/duckdb/), [SurrealDB](https://hkex-listco-updates.ascent-partners.com/docs/sinks/surrealdb/): per-engine setup, upserts, and notes.
 
 ## Architecture and operations
 
-- [Architecture](https://hkex-listco-updates.ascent-partners.com/architecture/): the two-phase pipeline and module map.
-- [Troubleshooting](https://hkex-listco-updates.ascent-partners.com/troubleshooting/): common failures and fixes.
-- [Testing](https://hkex-listco-updates.ascent-partners.com/testing/): how tests run and how to add them.
+- [Architecture](https://hkex-listco-updates.ascent-partners.com/docs/architecture/): the two-phase pipeline and module map.
+- [Troubleshooting](https://hkex-listco-updates.ascent-partners.com/docs/troubleshooting/): common failures and fixes.
+- [Testing](https://hkex-listco-updates.ascent-partners.com/docs/testing/): how tests run and how to add them.
 
 ## Project and governance
 
-- [Style guide](https://hkex-listco-updates.ascent-partners.com/STYLE/): docs style rules.
-- [Roadmap](https://hkex-listco-updates.ascent-partners.com/roadmap/): shipped, next, and considered work.
-- [De-risking register](https://hkex-listco-updates.ascent-partners.com/de-risking/): tracked risks and mitigations.
-- [Legal](https://hkex-listco-updates.ascent-partners.com/legal/): licensing and terms of use.
-- [Upgrading](https://hkex-listco-updates.ascent-partners.com/upgrading/): version-to-version migration notes.
+- [Style guide](https://hkex-listco-updates.ascent-partners.com/docs/STYLE/): docs style rules.
+- [Roadmap](https://hkex-listco-updates.ascent-partners.com/docs/roadmap/): shipped, next, and considered work.
+- [De-risking register](https://hkex-listco-updates.ascent-partners.com/docs/de-risking/): tracked risks and mitigations.
+- [Legal](https://hkex-listco-updates.ascent-partners.com/docs/legal/): licensing and terms of use.
+- [Upgrading](https://hkex-listco-updates.ascent-partners.com/docs/upgrading/): version-to-version migration notes.
 
 ## Releasing
 
-- [How to release](https://hkex-listco-updates.ascent-partners.com/releasing/): the tag → CI → PyPI + GitHub Release flow.
-- [Release automation reference](https://hkex-listco-updates.ascent-partners.com/release-automation/): how and why the release pipeline works.
+- [How to release](https://hkex-listco-updates.ascent-partners.com/docs/releasing/): the tag → CI → PyPI + GitHub Release flow.
+- [Release automation reference](https://hkex-listco-updates.ascent-partners.com/docs/release-automation/): how and why the release pipeline works.
 
 ## Decisions (ADRs)
 
-- [ADR 0001 — Versioning](https://hkex-listco-updates.ascent-partners.com/adr/0001-versioning-and-release-automation/): git-tag-as-version via hatch-vcs.
-- [ADR 0002 — Multi-sink](https://hkex-listco-updates.ascent-partners.com/adr/0002-multi-sink-architecture/): one scraper, many databases.
-- [ADR 0003 — Support policy](https://hkex-listco-updates.ascent-partners.com/adr/0003-sink-support-policy/): open source first.
-- [ADR 0004 — Publish to PyPI](https://hkex-listco-updates.ascent-partners.com/adr/0004-publish-to-pypi-trusted-publishing/): Trusted Publishing; GitHub Packages rejected.
+- [ADR 0001 — Versioning](https://hkex-listco-updates.ascent-partners.com/docs/adr/0001-versioning-and-release-automation/): git-tag-as-version via hatch-vcs.
+- [ADR 0002 — Multi-sink](https://hkex-listco-updates.ascent-partners.com/docs/adr/0002-multi-sink-architecture/): one scraper, many databases.
+- [ADR 0003 — Support policy](https://hkex-listco-updates.ascent-partners.com/docs/adr/0003-sink-support-policy/): open source first.
+- [ADR 0004 — Publish to PyPI](https://hkex-listco-updates.ascent-partners.com/docs/adr/0004-publish-to-pypi-trusted-publishing/): Trusted Publishing; GitHub Packages rejected.
 
 ## Full text
 
-- [Complete documentation in one file](https://hkex-listco-updates.ascent-partners.com/llms-full.txt): every page concatenated for a single-pass read.
+- [Complete documentation in one file](https://hkex-listco-updates.ascent-partners.com/docs/llms-full.txt): every page concatenated for a single-pass read.
 
 ## For AI agents
 

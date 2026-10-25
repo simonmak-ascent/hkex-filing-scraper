@@ -8,6 +8,8 @@ endpoint, the CLI flags, and the hand-maintained ``docs/llms.txt`` index.
 
 from __future__ import annotations
 
+import urllib.parse
+
 import json
 import pathlib
 import re
@@ -217,20 +219,38 @@ class TestDocumentationStyle:
 
 
 # --- MCP, live gateway, CLI, and the LLM index ---------------------------------
-def _site_domain() -> str:
+def _site_url() -> str:
     for line in _read("mkdocs.yml").splitlines():
         if line.startswith("site_url:"):
             return line.split(":", 1)[1].strip().rstrip("/")
     raise AssertionError("mkdocs.yml has no site_url")
 
 
+def _site_origin() -> str:
+    """Scheme + host, without the docs path.
+
+    The docs are mounted at `/docs` (the vhost serves `handle_path /docs/*`), while the
+    MCP gateway is a separate route at the host root. Endpoint assertions must use the
+    origin; only page links use the full site_url.
+    """
+    parts = urllib.parse.urlsplit(_site_url())
+    return f"{parts.scheme}://{parts.netloc}"
+
+
+def _site_domain() -> str:
+    """The docs base URL (`site_url`), for assertions about documentation links."""
+    return _site_url()
+
+
 class TestLiveGatewayDocs:
     """The live-gateway docs must match the deployed endpoint and the tool catalog."""
 
-    def test_documented_endpoint_matches_the_docs_domain(self):
-        domain = _site_domain()
+    def test_documented_endpoint_matches_the_deployed_route(self):
+        # The gateway is served at the host root (`routes.python: [/api/*]`), not under
+        # the /docs mount, so this compares against the origin rather than site_url.
+        origin = _site_origin()
         for rel in ("docs/live-mcp.md", "docs/ai-agents.md", "README.md"):
-            assert f"{domain}/api/mcp" in _read(rel), f"{rel} must use the /api/mcp endpoint"
+            assert f"{origin}/api/mcp" in _read(rel), f"{rel} must use the /api/mcp endpoint"
 
     def test_live_tool_catalog_matches_the_docs(self):
         from hkex_scraper import live_mcp
@@ -341,7 +361,8 @@ class TestMcpRegistryManifest:
         manifest = self._manifest()
         assert manifest["name"] == "com.ascent-partners/hkex-filings"
         assert manifest["description"].endswith(".")
-        assert f"{_site_domain()}/api/mcp" in [r["url"] for r in manifest["remotes"]]
+        # The gateway is a root route, not a docs page, so compare the origin.
+        assert f"{_site_origin()}/api/mcp" in [r["url"] for r in manifest["remotes"]]
 
     def test_package_entry_points_at_this_distribution(self):
         packages = self._manifest()["packages"]

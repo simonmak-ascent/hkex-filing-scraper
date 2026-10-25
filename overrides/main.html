@@ -1,18 +1,31 @@
 {% extends "base.html" %}
 
-{# Static OpenGraph / Twitter card metadata for the docs site.
-   Material already emits og:title/og:description/og:url and the canonical link;
-   this adds the social preview image and card type. #}
+{# OpenGraph / Twitter card metadata for the docs site.
+
+   Material emits <title>, <meta name="description"> and the canonical link, but NOT the
+   OpenGraph or Twitter titles: measured on the live site on 2026-10-25, `og:*` carried only
+   type/image/image:type, so a shared link rendered an image with no title. They are emitted
+   here, per page, from the page title and its `description` front matter. #}
 {% block extrahead %}
   {{ super() }}
+  {% set og_title = (page.title ~ " - " ~ config.site_name)
+     if page.title and page.title != config.site_name else config.site_name %}
+  {% set og_desc = (page.meta.description if page.meta and page.meta.description
+     else config.site_description) %}
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="https://hkex-listco-updates.ascent-partners.com/social_preview.png?v=2" />
+  <meta property="og:site_name" content="{{ config.site_name }}" />
+  <meta property="og:title" content="{{ og_title }}" />
+  <meta property="og:description" content="{{ og_desc }}" />
+  {% if page.canonical_url %}<meta property="og:url" content="{{ page.canonical_url }}" />{% endif %}
+  <meta property="og:image" content="{{ config.site_url }}social_preview.png?v=2" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:alt" content="HKEx Filing Scraper — HKEx filings, live for AI agents, and nine databases to keep them" />
   <meta property="og:image:width" content="1280" />
   <meta property="og:image:height" content="640" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:image" content="https://hkex-listco-updates.ascent-partners.com/social_preview.png?v=2" />
+  <meta name="twitter:title" content="{{ og_title }}" />
+  <meta name="twitter:description" content="{{ og_desc }}" />
+  <meta name="twitter:image" content="{{ config.site_url }}social_preview.png?v=2" />
   <meta name="twitter:image:alt" content="HKEx Filing Scraper — HKEx filings, live for AI agents, and nine databases to keep them" />
   {# Vercel Web Analytics - https://vercel.com/docs/analytics/quickstart #}
   <script>
