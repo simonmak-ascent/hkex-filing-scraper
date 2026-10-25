@@ -92,7 +92,7 @@ $ph {
 	}
 $api
 	handle {
-		redir * /docs 302
+		redir * /docs/ 302
 	}
 $(emit_site_extras)
 }
