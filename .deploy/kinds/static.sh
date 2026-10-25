@@ -92,7 +92,9 @@ $ph {
 	}
 $api
 	handle {
-		redir * /docs/ 302
+		@docs_mount path / /docs
+		redir @docs_mount /docs/ 302
+		respond "<!doctype html><meta charset=utf-8><title>Not found</title><p>Not found. See <a href=/docs/>the documentation</a>.</p>" 404
 	}
 $(emit_site_extras)
 }
@@ -125,8 +127,9 @@ cmd_rollback() { # [failed-slot] — return to the slot recorded before the depl
 }
 
 # probe_public <path> -> last HTTP status, polling while Caddy reloads.
-# The legacy :8080 listener is no longer present on the app nodes; probe the
-# public vhost so the smoke test follows the same path as users.
+# The vhost answers 301 on :80 (auto-HTTPS redirect), so a probe on :80 can never
+# see the docs' own status. Probe the public vhost instead: the same path a user
+# takes, and the only one that proves the site is reachable end to end.
 probe_public() {
   local path="$1" code=000 i
   for i in $(seq 1 10); do
@@ -155,33 +158,40 @@ cmd_smoke() {
   code="$(probe_public /docs/)"
   [ "$code" = "200" ] || die "smoke FAIL https://$DOMAIN/docs/ -> $code after 20s"
 
-  # Discovery files must answer at the root: robots and the sitemap are read from `/`
-  # by law-abiding crawlers, and a docs-native vhost serves them out of the docs root.
-  # Both were silently unreachable once (a mis-parsed `redir` left every path at an
-  # empty 200), and `/docs/` returning 200 did not notice.
+  # Discovery files must answer at the root. robots.txt and sitemap.xml are what
+  # crawlers fetch; llms.txt and llms-full.txt are what agents fetch. All four were
+  # silently unreachable for a while because the catch-all swallowed them, and
+  # `/docs/` returning 200 did not notice.
   for file in /robots.txt /sitemap.xml /llms.txt /llms-full.txt; do
     code="$(probe_public "$file")"
     [ "$code" = "200" ] || die "smoke FAIL https://$DOMAIN$file -> $code after 20s"
   done
 
-  # `/` is a permanent alias for the docs mount. A 302 here would be a temporary
-  # redirect for what is a fixed structure, and any other status means the catch-all
-  # is mis-parsing again (see the comment on `static)` in lib.sh).
-  read -r code loc <<EOF
-$(probe_redirect /)
+  # `/` and `/docs` are permanent aliases for the mount; a 302 would call a fixed
+  # structure temporary and pass no link equity.
+  for path in / /docs; do
+    read -r code loc <<EOF
+$(probe_redirect "$path")
 EOF
-  [ "$code" = "301" ] || die "smoke FAIL https://$DOMAIN/ -> $code (expected 301)"
-  case "$loc" in
-    */docs/) ;;
-    *) die "smoke FAIL https://$DOMAIN/ -> 301 to '$loc' (expected .../docs/)" ;;
-  esac
+    [ "$code" = "301" ] || die "smoke FAIL https://$DOMAIN$path -> $code (expected 301)"
+    case "$loc" in
+      */docs/) ;;
+      *) die "smoke FAIL https://$DOMAIN$path -> 301 to '$loc' (expected .../docs/)" ;;
+    esac
+  done
+
+  # Anything else is a genuine miss. If this returns 200 or 301 the catch-all is
+  # redirecting the whole site again, which is the soft-404 regression above.
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 \
+    "https://${DOMAIN}/__smoke-not-a-page" || echo 000)"
+  [ "$code" = "404" ] || die "smoke FAIL https://$DOMAIN/__smoke-not-a-page -> $code (expected 404)"
 
   if py_has; then
     port="$(py_slot_port "$slot")"
     code="$(probe_public "$PY_HEALTH_PATH")"
     [ "$code" = "200" ] || die "smoke FAIL https://$DOMAIN$PY_HEALTH_PATH -> $code (slot $slot :$port)"
   fi
-  log "smoke OK https://$DOMAIN (/docs/ + api, slot $slot)"
+  log "smoke OK $DOMAIN (/docs/, discovery files, redirects, 404) (slot $slot)"
 }
 
 verb="${1:?verb required}"; shift || true
@@ -190,7 +200,7 @@ case "$verb" in
   deploy) cmd_deploy "$@" ;;
   switch) cmd_switch "$@" ;;
   preview) cmd_preview "$@" ;;
-  rollback) cmd_rollback ;;
+  rollback) cmd_rollback "$@" ;;
   smoke) cmd_smoke "$@" ;;
   *) die "unknown verb: $verb" ;;
 esac

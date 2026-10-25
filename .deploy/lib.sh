@@ -13,7 +13,7 @@ export UV_CACHE_DIR="${UV_CACHE_DIR:-/opt/$APP/.cache/uv}"
 
 log()  { printf '[cd%s] %s\n' "${NODE_LABEL:+:$NODE_LABEL}" "$*" >&2; }
 die()  { printf '[cd] ERROR: %s\n' "$*" >&2; exit 1; }
-as_root() { sudo -n "$@"; }
+as_root() { if [ "$(id -u)" -eq 0 ]; then "$@"; else sudo -n "$@"; fi; }
 LAUNCHERS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/launchers"
 
 # mf <jq-ish dot path>  ->  print value from this app's manifest entry
@@ -107,7 +107,14 @@ caddy_reload() {
   # but does NOT re-register the geoip2 handler's per-request replacer, so a
   # geo/routing change silently fails to take effect. Serialize restarts across
   # app repos: concurrent deploys otherwise race and fail each other's reload.
-  exec 9>/run/lock/caddy-deploy.lock
+  # The lock used to live in /run/lock, a sticky directory: root cannot open a
+  # file there that the deploy user created (fs.protected_regular), so the CD
+  # failed exactly when it mattered. A dedicated non-sticky directory both users
+  # can write solves it.
+  local lockdir=/var/lib/apg-deploy
+  as_root install -d -m 0775 -o root -g "${DEPLOY_GROUP:-deploy}" "$lockdir" 2>/dev/null \
+    || mkdir -p "$lockdir" 2>/dev/null || true
+  exec 9>>"$lockdir/caddy.lock"
   flock -w 120 9 || die "timed out waiting for the Caddy deploy lock"
   as_root systemctl restart caddy
 }
@@ -288,7 +295,7 @@ docs_publish() {
 # ── shared Caddy vhost wrapper (ordering proven on ecs-01) ────────────────────
 # write_app_vhost <outfile> <slot> <frontend>
 #   frontend = next   -> catch-all reverse_proxy 127.0.0.1:<next slot port>
-#   frontend = static -> catch-all redir * /docs/ 301 (docs-native app; docs at /docs)
+#   frontend = static -> catch-all redir /docs 302 (docs-native app; docs at /docs)
 # Emits: geo country header + docs (/docs) + python routes + coraza + rate_limit
 # inside a catch-all `handle`; specific `handle`s for /docs and the python routes
 # come first (Caddy `handle` blocks are mutually exclusive, first match wins).
@@ -406,7 +413,13 @@ errors_publish() { # <slot>
   edge_errors_enabled || return 0
   local src="$APP_ROOT/$1/public/errors"
   [ -d "$src" ] || { log "errors_publish: no $src yet (skipping)"; return 0; }
-  mkdir -p "$EDGE_ERRORS_DIR"
+  # /srv is root-owned and the runner is unprivileged: `mkdir -p /srv/edge/errors`
+  # failed on every node that had not already been given the directory, taking the
+  # deploy — and the rollback that followed it — down with it.
+  if [ ! -d "$EDGE_ERRORS_DIR" ]; then
+    as_root install -d -m 0755 -o "$(id -un)" -g "$(id -gn)" "$EDGE_ERRORS_DIR" \
+      || die "cannot create $EDGE_ERRORS_DIR"
+  fi
   rsync -a --delete "$src/" "$EDGE_ERRORS_DIR/"
   write_wildcard_vhost
   log "edge error pages -> $EDGE_ERRORS_DIR ($(find "$EDGE_ERRORS_DIR" -name '*.html' | wc -l) pages)"
@@ -422,7 +435,11 @@ write_app_vhost() {
     printf '%s%s {\n' "$DOMAIN" "${aliases:+, $aliases}"
     printf '\tencode zstd gzip\n'
     printf '\ttls %s %s\n' "$cert" "$key"
-    printf '\tgeoip2_vars strict\n'
+    # Geo resolution mode. `trusted_proxies` honours X-Forwarded-For from the
+    # ALB; `strict` resolves the connecting address. The live estate runs
+    # trusted_proxies (applied fleet-wide 2026-10-23), so that is the default and
+    # a deploy no longer silently reverts it.
+    printf '\tgeoip2_vars %s\n' "$(mf geo_mode 2>/dev/null || echo trusted_proxies)"
     emit_security_headers
     # One canonical origin: permanently move any "www." alias to the apex host
     # (path + query preserved) so there is a single indexable origin. Other
@@ -431,18 +448,25 @@ write_app_vhost() {
       *",www.$DOMAIN,"*) printf '\t@www host www.%s\n\tredir @www https://%s{uri} 301\n' "$DOMAIN" "$DOMAIN" ;;
     esac
     printf '\thandle /%s.txt {\n\t\trespond "%s"\n\t}\n' "$INDEXNOW_KEY" "$INDEXNOW_KEY"
+    # ALB liveness: "can this node serve the website?" (Caddy is answering, the
+    # slot behind it is up). Deliberately NOT the aggregate — a tool app or the
+    # database failing must not drain the node and take every other host on it
+    # out of rotation. `/status` is the aggregate, exposed to the VPC only, for
+    # monitoring. No application defines either path (checked fleet-wide), so
+    # neither handle can shadow an app route.
+    printf '\thandle /healthz {\n\t\trewrite * /livez\n\t\treverse_proxy 127.0.0.1:8790\n\t}\n'
     # docs (mkdocs) at /docs
     if mf docs >/dev/null 2>&1; then
       local dpath; dpath="$(mf docs.path 2>/dev/null || echo /docs)"
       printf '\thandle_path %s/* {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$dpath" "$APP"
-      # Crawlers only read /robots.txt and /sitemap.xml at the HOST ROOT, so both are
-      # served from the docs tree under their root names. Without this the only
-      # robots.txt lives at /docs/robots.txt, where nothing looks.
+      # Discovery files are read at the HOST ROOT, not under the mount: crawlers
+      # fetch /robots.txt and /sitemap.xml, and agents fetch /llms.txt and
+      # /llms-full.txt (llmstxt.org). All four are produced inside the docs tree by
+      # the docs build, so they are served from there under their root names.
+      # Without this the catch-all would answer with a redirect or a 404 and every
+      # one of them is silently unreachable.
       printf '\thandle /robots.txt {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$APP"
       printf '\thandle /sitemap.xml {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$APP"
-      # The llmstxt.org convention puts both files at the root as well. The catch-all
-      # would otherwise 301 them to /docs/, which is an HTML page, so an agent asking
-      # for the index received the home page.
       printf '\thandle /llms.txt {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$APP"
       printf '\thandle /llms-full.txt {\n\t\troot * /srv/sites/%s/docs\n\t\tfile_server\n\t}\n' "$APP"
     fi
@@ -471,17 +495,22 @@ write_app_vhost() {
           printf '\t\treverse_proxy 127.0.0.1:%s\n' "$(slot_port "$slot")"
         fi
         ;;
-      # Two traps live here. The matcher must be explicit: `redir /docs 302` parses as
-      # matcher `/docs` with destination "302", which 302s /docs to the literal string
-      # and leaves every other path with an empty 200. The target must also keep the
-      # trailing slash: `handle_path /docs/*` does not match bare `/docs`, so
-      # redirecting to `/docs` sends that path back into this same catch-all and loops.
-      #
-      # 301, not 302: the docs mount is a permanent structure, not a temporary move, and
-      # a temporary redirect passes no link equity to the pages that carry the content.
-      # The preview vhost keeps 302 (kinds/static.sh) so a throwaway hostname never
-      # leaves a permanent redirect in a browser cache.
-      static) printf '\t\tredir * /docs/ 301\n' ;;
+      # Docs-native app: the mount is the site, so `/` and `/docs` are permanent
+      # aliases for it. Three traps live here, each of which shipped once:
+      #   1. `redir /docs 302` parses as matcher `/docs` with destination "302",
+      #      so /docs 302s to the literal string and every other path falls through
+      #      the catch-all with an empty 200.
+      #   2. The target must keep its trailing slash: `handle_path /docs/*` does not
+      #      match bare `/docs`, so redirecting to `/docs` re-enters this catch-all
+      #      and loops.
+      #   3. Redirecting the WHOLE catch-all turns every typo into a 301 to the docs
+      #      home, which crawlers read as a soft 404. Only the mount redirects; the
+      #      rest is a genuine 404, with a link back to the docs.
+      static)
+        printf '\t\t@docs_mount path / /docs\n'
+        printf '\t\tredir @docs_mount /docs/ 301\n'
+        printf '\t\trespond "<!doctype html><meta charset=utf-8><title>Not found</title><p>Not found. See <a href=/docs/>the documentation</a>.</p>" 404\n'
+        ;;
       node) printf '\t\treverse_proxy 127.0.0.1:%s\n' "$(slot_port "$slot")" ;;
       *) die "write_app_vhost: unknown frontend '$frontend'" ;;
     esac
