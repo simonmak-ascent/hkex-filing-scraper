@@ -1,3 +1,7 @@
+---
+description: Writing rules for every doc in this repo: US English, sentence case, sink versus engine, table and list spacing, and the lint rules that enforce them.
+---
+
 # Documentation style
 
 One rulebook for every human-facing doc in this repo: the README, the community files
@@ -36,6 +40,16 @@ Format identifiers, paths, variables, and commands as `` `code` ``. Format sink 
   is a terminal reference (ADR, changelog entry).
 - Per-sink guides follow one template so pages are diffable:
   `Overview → Install → Configure → Schema → Behavior and limits → Example queries → Troubleshooting`.
+- Every page in the nav opens with `description:` front matter: one sentence, 70–180
+  characters, saying what the page answers. It becomes the search snippet, the `og:` and
+  `twitter:` description, and the JSON-LD `description`, so a missing or duplicated one is a
+  missing or duplicated listing in search results.
+
+  ```yaml
+  ---
+  description: Write HKEx filings to PostgreSQL as the only sink or alongside others.
+  ---
+  ```
 
 ## Formatting
 
@@ -62,3 +76,5 @@ Format identifiers, paths, variables, and commands as `` `code` ``. Format sink 
   line length is disabled, and mermaid/front-matter blocks are allowed.
 - `tests/test_docs_consistency.py` fails a PR when a sink is added, removed, or renamed
   without updating the docs, templates, or `.env.example`.
+- The same file requires a `description:` front matter on every nav page, within the snippet
+  length, and unique across pages.

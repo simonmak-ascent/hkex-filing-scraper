@@ -134,9 +134,20 @@ def test_description_falls_back_to_the_site_description():
         site_description=DESC,
         page=page("cli/", "CLI"),
     )
-    howto_free = next(entity for entity in graph if entity["@type"] == "TechArticle")
-    assert "description" not in howto_free  # TechArticle does not carry one
+    article = next(entity for entity in graph if entity["@type"] == "TechArticle")
+    assert article["description"] == DESC
     assert seo._description(page("cli/", "CLI"), DESC) == DESC
+
+
+def test_an_article_carries_its_own_description():
+    graph = seo.build_graph(
+        site_url=SITE,
+        site_name=NAME,
+        site_description=DESC,
+        page=page("cli/", "CLI", description="Every flag, with an example invocation."),
+    )
+    article = next(entity for entity in graph if entity["@type"] == "TechArticle")
+    assert article["description"] == "Every flag, with an example invocation."
 
 
 def test_graphs_are_serialisable_and_cannot_break_out_of_the_script_tag():

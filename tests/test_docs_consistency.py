@@ -371,3 +371,56 @@ class TestMcpRegistryManifest:
     def test_readme_carries_the_registry_marker(self):
         # The registry verifies PyPI ownership by finding this string in the README.
         assert f"mcp-name: {self._manifest()['name']}" in _read("README.md")
+
+
+class TestPageDescriptions:
+    """Every navigable page needs its own meta description.
+
+    A page without one falls back to the site description, so the `og:` tags, the search
+    snippet and the JSON-LD all say the same generic sentence about the whole project
+    instead of what the page answers. Search engines also clip the snippet, so an
+    over-long description is a wasted one.
+    """
+
+    MIN_LENGTH = 70
+    #: Google truncates around 155–160 characters; leave headroom for a wider glyph set.
+    MAX_LENGTH = 180
+
+    def _nav_pages(self) -> list[str]:
+        """Every ``.md`` path referenced by the nav, in nav order."""
+        nav = _read("mkdocs.yml").split("nav:", 1)[1]
+        nav = nav.split("\n\n", 1)[0]
+        return re.findall(r"([\w./-]+\.md)", nav)
+
+    def _description(self, rel: str) -> str:
+        """The `description:` front-matter value, or an empty string."""
+        text = _read(rel) if rel.startswith("docs/") else _read(f"docs/{rel}")
+        if not text.startswith("---\n"):
+            return ""
+        front_matter = text.split("\n---\n", 1)[0]
+        match = re.search(r"^description:\s*(.+)$", front_matter, re.MULTILINE)
+        return match.group(1).strip() if match else ""
+
+    def test_every_nav_page_has_a_description(self):
+        missing = [page for page in self._nav_pages() if not self._description(page)]
+        assert not missing, f"nav pages without a description: {missing}"
+
+    def test_descriptions_are_within_the_snippet_length(self):
+        offenders = {
+            page: len(description)
+            for page in self._nav_pages()
+            if not self.MIN_LENGTH <= len(description := self._description(page)) <= self.MAX_LENGTH
+        }
+        assert not offenders, (
+            f"descriptions outside {self.MIN_LENGTH}–{self.MAX_LENGTH} characters: {offenders}"
+        )
+
+    def test_no_two_pages_share_a_description(self):
+        seen: dict[str, str] = {}
+        duplicates: list[str] = []
+        for page in self._nav_pages():
+            description = self._description(page)
+            if description in seen:
+                duplicates.append(f"{page} == {seen[description]}")
+            seen[description] = page
+        assert not duplicates, f"duplicate descriptions compete in search: {duplicates}"

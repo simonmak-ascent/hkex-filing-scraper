@@ -1,3 +1,7 @@
+---
+description: The living risk register: each risk scored L×I, its current control, and the release horizon (C1/C2/C3) that owns it.
+---
+
 # De-risking register
 
 Living document. Reviewed at every release. Scores are **L×I** (likelihood × impact, 1–5).

@@ -1,3 +1,7 @@
+---
+description: ADR 0002: one Sink contract, declared SinkCapabilities, lazy driver imports and an ordered registry, so a new database needs no change to the pipeline.
+---
+
 # ADR 0002 — Multi-sink architecture
 
 - Status: Accepted

@@ -1,3 +1,7 @@
+---
+description: Cut a release by pushing a tag. What number to pick, which tag triggers the publish, and what the automation does with it.
+---
+
 # How to Make a Release
 
 A release is just a **tag**. You pick a number, push the tag, and a robot does the rest.
