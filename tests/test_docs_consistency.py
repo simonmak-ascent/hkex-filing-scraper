@@ -234,7 +234,7 @@ def _site_origin() -> str:
     origin; only page links use the full site_url.
     """
     parts = urllib.parse.urlsplit(_site_url())
-    return f"{parts.scheme}://{parts.netloc"
+    return f"{parts.scheme}://{parts.netloc}"
 
 
 def _site_domain() -> str:
