@@ -98,7 +98,12 @@ def test_a_sink_page_is_an_article_about_that_engine():
 
 
 def test_getting_started_is_a_howto_whose_steps_are_its_headings():
-    toc = [SimpleNamespace(title="Install"), SimpleNamespace(title="Scrape")]
+    # MkDocs' toc starts with the page H1, which is the title, not a step.
+    toc = [
+        SimpleNamespace(title="Getting Started", level=1),
+        SimpleNamespace(title="Install", level=2),
+        SimpleNamespace(title="Scrape", level=2),
+    ]
     graph = seo.build_graph(
         site_url=SITE,
         site_name=NAME,
@@ -145,3 +150,48 @@ def test_graphs_are_serialisable_and_cannot_break_out_of_the_script_tag():
 
     assert "</script" not in payload.lower()
     assert json.loads(payload.replace("<\\/", "</")) == graph
+
+
+def test_breadcrumb_titles_come_from_the_nav():
+    nav = [
+        SimpleNamespace(
+            title=None,
+            children=[SimpleNamespace(title="Sinks", children=None, url="sinks/")],
+        ),
+        SimpleNamespace(
+            title="Sinks",
+            children=[
+                SimpleNamespace(title="PostgreSQL", url="sinks/postgresql/", children=None)
+            ],
+        ),
+    ]
+    graph = seo.build_graph(
+        site_url=SITE,
+        site_name=NAME,
+        site_description=DESC,
+        page=page("sinks/postgresql/", "PostgreSQL"),
+        nav=nav,
+    )
+    trail = next(e for e in graph if e["@type"] == "BreadcrumbList")["itemListElement"]
+    assert [item["name"] for item in trail] == ["Home", "Sinks", "PostgreSQL"]
+
+
+def test_breadcrumb_falls_back_to_the_slug_without_a_nav():
+    graph = seo.build_graph(
+        site_url=SITE,
+        site_name=NAME,
+        site_description=DESC,
+        page=page("sinks/clickhouse/", "ClickHouse"),
+    )
+    trail = next(e for e in graph if e["@type"] == "BreadcrumbList")["itemListElement"]
+    assert [item["name"] for item in trail] == ["Home", "Sinks", "ClickHouse"]
+
+
+def test_the_home_page_has_no_breadcrumb():
+    graph = seo.build_graph(
+        site_url=SITE,
+        site_name=NAME,
+        site_description=DESC,
+        page=page("", NAME, home=True),
+    )
+    assert "BreadcrumbList" not in types(graph)

@@ -26,7 +26,7 @@ its headings, so the markup cannot drift from the prose.
 from __future__ import annotations
 
 import json
-from typing import Any, Iterable
+from typing import Any
 from urllib.parse import urljoin
 
 #: Pages whose H2 headings are a procedure, rendered as ``HowTo``.
@@ -61,38 +61,68 @@ def _description(page: Any, site_description: str) -> str:
     return value or site_description
 
 
-def _steps_from_toc(toc: Any) -> list[dict[str, str]]:
-    """Turn the page's top-level headings into ``HowToStep`` entries."""
+def _steps_from_toc(toc: Any, page_title: str = "") -> list[dict[str, str]]:
+    """Turn the page's section headings into ``HowToStep`` entries.
+
+    MkDocs' toc includes the page's own H1 (``level 1``), which is the page title, not a
+    step — it is skipped so the HowTo starts at the first real section.
+    """
     steps: list[dict[str, str]] = []
     for item in toc or []:
         title = getattr(item, "title", None)
-        if not title:
+        level = getattr(item, "level", 2)
+        if not title or level < 2 or title == page_title:
             continue
         steps.append({"@type": "HowToStep", "name": title, "text": title})
     return steps
 
 
-def _breadcrumb(site_url: str, page: Any) -> dict[str, Any] | None:
-    """BreadcrumbList from the nav trail, home first."""
+def nav_titles(nav: Any) -> dict[str, str]:
+    """Map a URL prefix to the title the nav gives it.
+
+    ``page.ancestors`` is empty when a nav group is a plain section (no landing page),
+    which is how this site is organised, so the trail is derived from the URL and the
+    titles come from the nav. Duck-typed: MkDocs is not a dependency of the package.
+    """
+    titles: dict[str, str] = {}
+
+    def walk(items: Any) -> None:
+        for item in items or []:
+            children = getattr(item, "children", None)
+            url = getattr(item, "url", None)
+            title = getattr(item, "title", None)
+            if children:
+                for child in children:
+                    child_url = getattr(child, "url", None)
+                    if child_url:
+                        head = child_url.strip("/").split("/")[0]
+                        if head:
+                            titles.setdefault(head, title or head.title())
+                walk(children)
+            elif url:
+                titles[url.strip("/")] = title or url
+
+    walk(nav)
+    return titles
+
+
+def _breadcrumb(site_url: str, page: Any, titles: dict[str, str] | None = None) -> dict[str, Any]:
+    """BreadcrumbList from the page URL, titled by the nav where possible."""
+    titles = titles or {}
+    segments = [segment for segment in (getattr(page, "url", "") or "").split("/") if segment]
     trail: list[dict[str, Any]] = [
         {"@type": "ListItem", "position": 1, "name": "Home", "item": _absolute(site_url, "")}
     ]
-    ancestors: Iterable[Any] = getattr(page, "ancestors", None) or []
-    for ancestor in ancestors:
-        url = getattr(ancestor, "url", "") or ""
-        title = getattr(ancestor, "title", "") or url
-        # A section without its own page has no URL to point at.
-        if url:
-            trail.append(
-                {
-                    "@type": "ListItem",
-                    "position": len(trail) + 1,
-                    "name": title,
-                    "item": _absolute(site_url, url),
-                }
-            )
-    if len(trail) < 2:
-        return None
+    for index, segment in enumerate(segments[:-1]):
+        prefix = "/".join(segments[: index + 1])
+        trail.append(
+            {
+                "@type": "ListItem",
+                "position": len(trail) + 1,
+                "name": titles.get(prefix, segment.replace("-", " ").title()),
+                "item": _absolute(site_url, prefix + "/"),
+            }
+        )
     trail.append(
         {
             "@type": "ListItem",
@@ -131,7 +161,7 @@ def _howto(site_url: str, page: Any, description: str) -> dict[str, Any]:
         "description": description,
         "url": _absolute(site_url, getattr(page, "url", "") or ""),
         "totalTime": "PT10M",
-        "step": _steps_from_toc(getattr(page, "toc", None)),
+        "step": _steps_from_toc(getattr(page, "toc", None), _heading(page)),
     }
 
 
@@ -173,6 +203,7 @@ def build_graph(
     site_name: str,
     site_description: str,
     page: Any,
+    nav: Any = None,
 ) -> list[dict[str, Any]]:
     """The JSON-LD entities for one page. Pure: takes the page, returns dicts."""
     url = getattr(page, "url", "") or ""
@@ -191,9 +222,9 @@ def build_graph(
     if not bool(getattr(page, "is_homepage", False)):
         graph.append(_article(site_url, page, site_name))
 
-    breadcrumb = _breadcrumb(site_url, page)
-    if breadcrumb:
-        graph.append(breadcrumb)
+    # The homepage is the trail's own root; a one-item breadcrumb is noise.
+    if not bool(getattr(page, "is_homepage", False)):
+        graph.append(_breadcrumb(site_url, page, nav_titles(nav)))
     return graph
 
 
@@ -214,6 +245,7 @@ def on_page_context(context: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
         site_name=str(getattr(config, "site_name", "") or ""),
         site_description=str(getattr(config, "site_description", "") or ""),
         page=page,
+        nav=kwargs.get("nav"),
     )
     if graph:
         context["page_jsonld"] = dumps(graph)
