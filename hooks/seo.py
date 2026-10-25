@@ -32,7 +32,7 @@ from typing import Any
 from urllib.parse import urljoin
 
 #: Pages whose H2 headings are a procedure, rendered as ``HowTo``.
-HOWTO_PAGES = frozenset({"getting-started/", "live-mcp/"})
+HOWTO_PAGES = frozenset({"getting-started/", "live-mcp/", "scheduled-ingest/"})
 
 #: Engine names for the sink guides, used as ``TechArticle.about``.
 SINK_ENGINES = {
