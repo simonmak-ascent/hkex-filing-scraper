@@ -126,6 +126,16 @@ same `DATABASE_TARGET` and sink connection settings and reads them from `Path.cw
 Because the database adapters do not enforce read-only access, point the MCP server at a
 database user that only has `SELECT` (or a read replica). See [MCP server](mcp.md#safety).
 
+## Coverage retention and heartbeat
+
+| Variable | Default | Description |
+| -------- | ------- | ----------- |
+| `COVERAGE_RETENTION_DAYS` | `180` | `scrape_coverage` rows kept. Pruned after a successful metadata phase; at daily polling the table grows by roughly 70 rows a day. |
+| `SCRAPER_HEARTBEAT_FILE` | `/var/lib/hkex-scraper/heartbeat` | Epoch-seconds stamp rewritten on every heartbeat, for watchdogs that depend on nothing but coreutils. An empty string disables it. |
+
+See [Keep the corpus current](scheduled-ingest.md) for how the two signals are meant to be
+used.
+
 ## Performance
 
 | Variable | Default | Description |
