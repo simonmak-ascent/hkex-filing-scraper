@@ -137,11 +137,45 @@ probe_public() {
   printf '%s' "$code"
 }
 
+# probe_redirect <path> -> "<status> <location>", polling while Caddy reloads.
+probe_redirect() {
+  local path="$1" code=000 loc="" i
+  for i in $(seq 1 10); do
+    read -r code loc < <(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' \
+      --max-time 8 "https://${DOMAIN}${path}" || echo "000 ")
+    [ "$code" != "000" ] && break
+    sleep 2
+  done
+  printf '%s %s' "$code" "$loc"
+}
+
 cmd_smoke() {
-  local slot port code
+  local slot port code loc file
   slot="$(active_slot)"
   code="$(probe_public /docs/)"
   [ "$code" = "200" ] || die "smoke FAIL https://$DOMAIN/docs/ -> $code after 20s"
+
+  # Discovery files must answer at the root: robots and the sitemap are read from `/`
+  # by law-abiding crawlers, and a docs-native vhost serves them out of the docs root.
+  # Both were silently unreachable once (a mis-parsed `redir` left every path at an
+  # empty 200), and `/docs/` returning 200 did not notice.
+  for file in /robots.txt /sitemap.xml; do
+    code="$(probe_public "$file")"
+    [ "$code" = "200" ] || die "smoke FAIL https://$DOMAIN$file -> $code after 20s"
+  done
+
+  # `/` is a permanent alias for the docs mount. A 302 here would be a temporary
+  # redirect for what is a fixed structure, and any other status means the catch-all
+  # is mis-parsing again (see the comment on `static)` in lib.sh).
+  read -r code loc <<EOF
+$(probe_redirect /)
+EOF
+  [ "$code" = "301" ] || die "smoke FAIL https://$DOMAIN/ -> $code (expected 301)"
+  case "$loc" in
+    */docs/) ;;
+    *) die "smoke FAIL https://$DOMAIN/ -> 301 to '$loc' (expected .../docs/)" ;;
+  esac
+
   if py_has; then
     port="$(py_slot_port "$slot")"
     code="$(probe_public "$PY_HEALTH_PATH")"
