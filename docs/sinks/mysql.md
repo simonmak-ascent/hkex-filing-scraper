@@ -1,3 +1,7 @@
+---
+description: Write HKEx filings and document payloads to MySQL or MariaDB with ON DUPLICATE KEY UPDATE. DSN variables, schema, and the GPLv2 licence note.
+---
+
 # MySQL and MariaDB sink
 
 Persist filings, document payloads, coverage rows, and graph edges to MySQL or MariaDB.

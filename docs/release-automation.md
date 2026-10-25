@@ -1,3 +1,7 @@
+---
+description: Reference for the release pipeline: how the version is derived from the tag, how artifacts are built and signed, what can break, and how to fix it.
+---
+
 # Release Automation — Reference
 
 This document explains how releases are built and published, **why** it is done this way,

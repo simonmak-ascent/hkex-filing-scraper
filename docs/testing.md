@@ -1,3 +1,7 @@
+---
+description: How to run the unit suite, the integration tests that need live databases, ruff linting, and the coverage floor CI enforces.
+---
+
 # Testing
 
 ## Unit tests (no database, no network)

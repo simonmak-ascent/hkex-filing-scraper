@@ -1,3 +1,7 @@
+---
+description: ADR 0003: default to OSI-approved open-source engines and accept source-available ones only as a labelled exception, never in the [all] extra.
+---
+
 # ADR 0003 — Sink support policy (open source first)
 
 - Status: Accepted

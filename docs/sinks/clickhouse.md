@@ -1,3 +1,7 @@
+---
+description: Write HKEx filings and documents to ClickHouse over HTTP, using ReplacingMergeTree plus read-merge-reinsert for idempotency. Table schema and connection variables.
+---
+
 # ClickHouse sink
 
 Persist filings, document payloads, coverage rows, and graph edges to ClickHouse.
