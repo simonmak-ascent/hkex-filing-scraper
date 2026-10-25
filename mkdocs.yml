@@ -67,6 +67,7 @@ nav:
   - Live MCP gateway: live-mcp.md
   - AI agent support: ai-agents.md
   - Architecture: architecture.md
+  - Scheduled ingest: scheduled-ingest.md
   - Troubleshooting: troubleshooting.md
   - Testing: testing.md
   - Project:

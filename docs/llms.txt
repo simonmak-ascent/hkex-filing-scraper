@@ -25,6 +25,7 @@
 ## Architecture and operations
 
 - [Architecture](https://hkex-listco-updates.ascent-partners.com/docs/architecture/): the two-phase pipeline and module map.
+- [Scheduled ingest](https://hkex-listco-updates.ascent-partners.com/docs/scheduled-ingest/): run it on a timer, read the heartbeat, and recover a skipped chunk.
 - [Troubleshooting](https://hkex-listco-updates.ascent-partners.com/docs/troubleshooting/): common failures and fixes.
 - [Testing](https://hkex-listco-updates.ascent-partners.com/docs/testing/): how tests run and how to add them.
 
