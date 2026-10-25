@@ -119,7 +119,7 @@ def test_getting_started_is_a_howto_whose_steps_are_its_headings():
 
 def test_navigation_headings_are_not_steps():
     content = (
-        '<h2>Choose the window</h2><h2>Schedule it</h2>'
+        "<h2>Choose the window</h2><h2>Schedule it</h2>"
         '<h2 id="next-steps">Next steps<a class="headerlink">&para;</a></h2>'
         "<h2>See also</h2>"
     )
