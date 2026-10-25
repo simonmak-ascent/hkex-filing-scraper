@@ -6,6 +6,8 @@ repo_url: https://github.com/simonmak-ascent/hkex-filing-scraper
 repo_name: simonmak-ascent/hkex-filing-scraper
 edit_uri: edit/main/docs/
 docs_dir: docs
+hooks:
+  - hooks/seo.py
 theme:
   name: material
   custom_dir: overrides
