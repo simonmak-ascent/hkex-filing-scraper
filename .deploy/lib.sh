@@ -288,7 +288,7 @@ docs_publish() {
 # ── shared Caddy vhost wrapper (ordering proven on ecs-01) ────────────────────
 # write_app_vhost <outfile> <slot> <frontend>
 #   frontend = next   -> catch-all reverse_proxy 127.0.0.1:<next slot port>
-#   frontend = static -> catch-all redir * /docs/ 302 (docs-native app; docs at /docs)
+#   frontend = static -> catch-all redir * /docs/ 301 (docs-native app; docs at /docs)
 # Emits: geo country header + docs (/docs) + python routes + coraza + rate_limit
 # inside a catch-all `handle`; specific `handle`s for /docs and the python routes
 # come first (Caddy `handle` blocks are mutually exclusive, first match wins).
@@ -471,7 +471,12 @@ write_app_vhost() {
       # and leaves every other path with an empty 200. The target must also keep the
       # trailing slash: `handle_path /docs/*` does not match bare `/docs`, so
       # redirecting to `/docs` sends that path back into this same catch-all and loops.
-      static) printf '\t\tredir * /docs/ 302\n' ;;
+      #
+      # 301, not 302: the docs mount is a permanent structure, not a temporary move, and
+      # a temporary redirect passes no link equity to the pages that carry the content.
+      # The preview vhost keeps 302 (kinds/static.sh) so a throwaway hostname never
+      # leaves a permanent redirect in a browser cache.
+      static) printf '\t\tredir * /docs/ 301\n' ;;
       node) printf '\t\treverse_proxy 127.0.0.1:%s\n' "$(slot_port "$slot")" ;;
       *) die "write_app_vhost: unknown frontend '$frontend'" ;;
     esac
