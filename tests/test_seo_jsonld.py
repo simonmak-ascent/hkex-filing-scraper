@@ -160,9 +160,7 @@ def test_breadcrumb_titles_come_from_the_nav():
         ),
         SimpleNamespace(
             title="Sinks",
-            children=[
-                SimpleNamespace(title="PostgreSQL", url="sinks/postgresql/", children=None)
-            ],
+            children=[SimpleNamespace(title="PostgreSQL", url="sinks/postgresql/", children=None)],
         ),
     ]
     graph = seo.build_graph(
