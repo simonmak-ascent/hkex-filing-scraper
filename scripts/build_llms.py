@@ -23,8 +23,8 @@ MKDOCS = Path("mkdocs.yml")
 def _site_url() -> str:
     """The published base URL, read from mkdocs.yml.
 
-    One source of truth: the site is mounted at /docs by the vhost, so a hardcoded
-    root here would emit links that resolve to a blank page.
+    One source of truth: the site is served under /docs by the nginx origin, so a
+    hardcoded root here would emit links that resolve to a blank page.
     """
     for line in MKDOCS.read_text(encoding="utf-8").splitlines():
         if line.startswith("site_url:"):

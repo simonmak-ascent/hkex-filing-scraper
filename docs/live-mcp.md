@@ -169,30 +169,40 @@ are:
 - **Origin validation** — requests carrying a disallowed `Origin` are rejected (MCP's
   DNS-rebinding mitigation).
 - **No caching** — responses are sent with `Cache-Control: no-store`.
-- **Rate limiting** — a Vercel Firewall rule limits `/api/mcp` to 120 requests per 60 seconds
-  per IP; excess requests are answered with `429 Too Many Requests`.
+- **Rate limiting** — none at the edge. The Vercel Firewall rule (120 requests per 60 seconds per
+  IP, `429` beyond) retired with the Vercel deployment in October 2026; the estate's ALB and WAF set
+  no per-IP limit for this host, and WAF policy access is still an open item (apg-infra OI-29).
 - **Liveness** — `GET /api/healthz` returns `{"ok":true}` and reads nothing.
 - **Bounded responses** — the limits above keep every response well within the platform body
   limit.
 
 ## Deployment
 
-The gateway is a single Python function on Vercel, deployed from this repository alongside
-the documentation site. The transport is implemented directly in
-`src/hkex_scraper/live_mcp.py` (it needs no server SDK and no ASGI lifespan), and the Vercel
-entry point is `api/mcp.py`.
+The gateway ships as the **`hkex-mcp` container** — declared in `container.json`, built from
+`docker/http.Dockerfile`, gunicorn on port **8041**. The transport is implemented directly in
+`src/hkex_scraper/live_mcp.py` (it needs no server SDK and no ASGI lifespan), and `api/mcp.py`
+mounts it.
 
-The project is linked to GitHub, so deployment is automatic: pushes to `main` deploy to
-production (`https://hkex-listco-updates.ascent-partners.com/`), and every other branch or
-pull request deploys an isolated preview. The function runs in the Hong Kong region (`hkg1`)
-with a Singapore failover (`sin1`), and it is configured with Fluid compute so document
-extraction can run within the function's execution budget.
+Routing belongs to the balancer, not the node: the ALB sends `/api/*` on
+`hkex-listco-updates.ascent-partners.com` to the hkex API group (container port 8041) and every
+other path to the shared nginx origin on `:8088`, which serves this documentation site. The ALB
+also terminates TLS, with the estate's wildcard certificate; no node runs a routing web server,
+holds a certificate, or carries a per-host configuration file. Port, health and host-rule changes
+are declared in the host file on ecs-04 and applied with `publish.py plan|apply` in a publishing
+window (a **new** port also needs a security-group rule; both node groups are at the 20-rule limit
+— apg-infra OI-25).
+
+Historically the gateway was a single Python function on Vercel (region `hkg1`, Singapore
+failover, Fluid compute), deployed from this repository alongside the documentation site, with
+pushes to `main` deploying production and every other branch a preview. That path retired when the
+gateway moved to the estate in October 2026; `vercel.json` survives as the historical hosting
+contract — do not `vercel deploy`.
 
 The document-extraction libraries (`PyMuPDF`, `pymupdf4llm`, `openpyxl`) are AGPL-3.0, so
-they are not published dependencies of the distribution (see [Legal](legal.md)); the
-deployment installs them through the `deploy` dependency group in `pyproject.toml`.
+they are not published dependencies of the distribution (see [Legal](legal.md)); a runtime that
+needs extraction installs them through the `deploy` dependency group in `pyproject.toml`.
 `pymupdf4llm` is pinned to a release that depends only on PyMuPDF — its 1.x line pulls an
-additional layout model (onnxruntime and numpy) that exceeds the serverless bundle limit.
+additional layout model (onnxruntime and numpy) that no image here needs.
 
 ## See also
 

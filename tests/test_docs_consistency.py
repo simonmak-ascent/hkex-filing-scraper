@@ -229,9 +229,10 @@ def _site_url() -> str:
 def _site_origin() -> str:
     """Scheme + host, without the docs path.
 
-    The docs are mounted at `/docs` (the vhost serves `handle_path /docs/*`), while the
-    MCP gateway is a separate route at the host root. Endpoint assertions must use the
-    origin; only page links use the full site_url.
+    The docs are served under `/docs` by the nginx origin on `:8088`, while the
+    MCP gateway is a separate route at the host root (the ALB sends `/api/*` to the
+    container). Endpoint assertions must use the origin; only page links use the
+    full site_url.
     """
     parts = urllib.parse.urlsplit(_site_url())
     return f"{parts.scheme}://{parts.netloc}"

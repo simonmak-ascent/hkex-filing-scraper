@@ -318,7 +318,7 @@ tests that need a server are skipped unless that sink is configured. See
 
 CI and deployment run through the APG workbench pipeline.
 
-The deploy smoke check probes the public vhost, not a local port.
+The deploy smoke check probes the public hostname through the balancer, not a local port.
 
 ## Contributing
 
