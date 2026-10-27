@@ -1,0 +1,21 @@
+{
+  "name": "hkex-mcp",
+  "repo": "simonmak-ascent/hkex-filing-scraper",
+  "image": "ghcr.io/simonmak-ascent/hkex-filing-scraper:20261027T004500",
+  "port": 8041,
+  "hosts": ["hkex-listco-updates.ascent-partners.com"],
+  "health": {
+    "proto": "tcp",
+    "path": "/"
+  },
+  "run": {
+    "user": "10001:10001",
+    "network": "bridge",
+    "bind": "0.0.0.0",
+    "entrypoint": "exec"
+  },
+  "dataClass": "none",
+  "wave": 2,
+  "owner": "simonmak-ascent",
+  "notes": "The HTTP MCP gateway (api.mcp:app) behind gunicorn on 8041. The static documentation on 8088 is the shared nginx origin, not this image. Health is TCP because the app answers MCP JSON-RPC on POST and the separate health app is not mounted here. The tag is the build stamp; replace it with the GHCR digest at the first push."
+}
