@@ -52,9 +52,9 @@ jobs:
           [ -n "${{ inputs.package }}" ] && repo="$repo/${{ inputs.package }}"
           dst="$repo:${src#*:}"
           docker tag "$src" "$dst"
-          # Several layers in flight: a single stream is window-limited on this
-          # link, so this is what actually fills the pipe.
-          docker push --max-concurrent-uploads 8 "$dst"
+          # Concurrency is a daemon setting (--max-concurrent-uploads); a
+          # per-push flag does not exist.
+          docker push "$dst"
           digest="$(docker inspect --format '{{index .RepoDigests 0}}' "$dst")"
           echo "$digest"
           {
