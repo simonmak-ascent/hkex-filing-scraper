@@ -99,7 +99,7 @@ dev = [
 # `pymupdf-layout` -> onnxruntime + numpy (~150 MB), which pushes the serverless bundle
 # past the platform limit.
 [dependency-groups]
-deploy = ["PyMuPDF>=1.25.5", "pymupdf4llm==0.0.20", "openpyxl>=3.1"]
+deploy = ["PyMuPDF>=1.25.5", "pymupdf4llm==2.0", "openpyxl>=3.1"]
 
 [tool.uv]
 default-groups = ["deploy"]
