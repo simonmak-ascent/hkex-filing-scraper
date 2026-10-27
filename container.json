@@ -1,9 +1,11 @@
 {
   "name": "hkex-mcp",
   "repo": "simonmak-ascent/hkex-filing-scraper",
-  "image": "ghcr.io/simonmak-ascent/hkex-filing-scraper:20261027T004500",
+  "image": "ghcr.io/simonmak-ascent/hkex-filing-scraper@sha256:c5030b88e5233f12e585e79890b4eea99264c2e3adc63ad3a03b2c74d56de6a7",
   "port": 8041,
-  "hosts": ["hkex-listco-updates.ascent-partners.com"],
+  "hosts": [
+    "hkex-listco-updates.ascent-partners.com"
+  ],
   "health": {
     "proto": "tcp",
     "path": "/"
