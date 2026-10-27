@@ -21,3 +21,6 @@ scripts/
 uv.lock
 .env
 .env.*
+
+# the HTTP image needs the WSGI entry points
+!api/
