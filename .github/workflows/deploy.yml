@@ -9,11 +9,14 @@ name: deploy
 # node; `cd` runs one job per node on that node's runner with DEPLOY_NODE set,
 # so every node builds, deploys and switches the SAME slot. A failing node rolls
 # the whole fleet back to the slot each node ran before the deploy.
+# RETIRED TRIGGER (2026-10-27). This workflow deploys the old systemd slot and
+# writes a Caddy vhost; Caddy was purged from the estate and the app runs as a
+# container (see container.json). Every push to main therefore failed with
+# `mkdir /etc/caddy: Permission denied` while the app was, in fact, fine.
+# The automatic trigger is gone; the file stays as the record of the old path
+# until `.deploy/` is retired (apg-infra OI-38).
 on:
-  # Pull requests are validated on GitHub-hosted runners by ci.yml.
-  # Never execute pull-request code on the self-hosted deploy runner.
-  push:
-    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
