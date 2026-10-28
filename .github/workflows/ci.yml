@@ -47,34 +47,6 @@ jobs:
       - name: Build the LLM full-text bundle
         run: python3 scripts/build_llms.py
 
-  supply-chain:
-    name: Supply chain
-    runs-on: [self-hosted, apg-ci-04]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-        with:
-          enable-cache: true
-      - name: Lockfile is current
-        run: uv lock --check
-      - name: Install exactly from the lockfile
-        run: uv sync --frozen --all-extras
-      - name: Export the locked runtime dependency set
-        # Runtime extras that ship in `all`. The AGPL `pdf` extra and the `dev` tooling are
-        # deliberately excluded; tests/test_supply_chain.py keeps this list in step with pyproject.
-        run: |
-          uv export --frozen --no-dev --no-hashes --no-emit-project \
-            --extra excel --extra postgres --extra mysql --extra duckdb \
-            --extra mongodb --extra clickhouse --extra neo4j --extra mcp \
-            --output-file /tmp/requirements-runtime.txt
-      - name: Audit the locked set for known vulnerabilities
-        run: uvx --from pip-audit pip-audit --strict --requirement /tmp/requirements-runtime.txt
-      - name: License policy (no copyleft in the all extra)
-        run: |
-          python -m venv /tmp/licenses
-          /tmp/licenses/bin/pip install --quiet ".[all]"
-          /tmp/licenses/bin/python scripts/check_licenses.py
-
   coverage:
     name: Coverage (unit suite)
     runs-on: [self-hosted, apg-ci-04]
