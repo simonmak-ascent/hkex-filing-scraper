@@ -22,7 +22,7 @@ permissions:
 jobs:
   publish:
     name: Publish to PyPI
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, apg-ci-04]
     permissions:
       contents: read
     steps:
